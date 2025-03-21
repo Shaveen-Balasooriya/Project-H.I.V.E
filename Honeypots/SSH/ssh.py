@@ -11,8 +11,8 @@ class SSHHoneypot(paramiko.ServerInterface):
     The honeypot only captures authentication attempts without shell emulation.
     """
 
-    def __init__(self, port: int, banner: str, credentials: list, bind_address: str = "0.0.0.0",
-                 key_file: str = "honeypot_rsa.key") -> None:
+    def __init__(self, port: int, banner: str, credentials: list, bind_address: str = "0.0.0.0", key_file: str =
+    None) -> None:
         """
         Initialize the SSH honeypot with the given parameters.
 
@@ -21,13 +21,17 @@ class SSHHoneypot(paramiko.ServerInterface):
             banner (str): The banner message displayed to connecting clients.
             credentials (list): List of (username, password) tuples for authentication.
             bind_address (str, optional): Address to bind the server to. Defaults to "0.0.0.0".
-            key_file (str, optional): File to store/load the RSA host key. Defaults to "honeypot_rsa.key".
+            key_file (str, optional): File to store/load the RSA host key. Defaults to nothing.
         """
         self.port = port
         self.banner = banner
         self.credentials = credentials
         self.bind_address = bind_address
-        self.key_file = key_file
+
+        if key_file is None:
+            self.key_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ssh_host_key")
+        else:
+            self.key_file = key_file
 
         # Private attributes
         self._server_socket = None
@@ -145,20 +149,12 @@ class SSHHoneypot(paramiko.ServerInterface):
         Load existing host key or generate a new one if it doesn't exist.
         """
         try:
-            # Check if key file exists
-            if os.path.isfile(self.key_file):
-                # Load existing key
-                self._host_key = paramiko.RSAKey(filename=self.key_file)
-                print(f"Loaded RSA host key from {self.key_file}")
-            else:
-                # Generate new key
-                self._host_key = paramiko.RSAKey.generate(2048)
-                # Save key to file
-                self._host_key.write_private_key_file(self.key_file)
-                print(f"Generated and saved RSA host key to {self.key_file}")
-        except Exception as e:
-            print(f"Error with host key: {str(e)}")
-            raise
+            self._host_key = paramiko.RSAKey(filename=self.key_file)
+            print(f"Using existing host key: {self.key_file}")
+        except FileNotFoundError:
+            print(f"Generating new host key: {self.key_file}")
+            self._host_key = paramiko.RSAKey.generate(2048)
+            self._host_key.write_private_key_file(self.key_file)
 
     def _accept_connections(self) -> None:
         """
@@ -232,6 +228,5 @@ class SSHHoneypot(paramiko.ServerInterface):
         finally:
             try:
                 client_socket.close()
-            except:
-                pass
-            print(f"Connection closed from {addr[0]}:{addr[1]}")
+            finally:
+                print(f"Connection closed from {addr[0]}:{addr[1]}")
