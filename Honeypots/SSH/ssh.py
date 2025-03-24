@@ -42,6 +42,7 @@ class SSHHoneypot(paramiko.ServerInterface):
         # Generate or load host key
         self._load_or_generate_host_key()
 
+    # Paramiko server interface methods
     def check_auth_password(self, username: str, password: str) -> int:
         """
         Log authentication attempts and optionally allow them based on credentials.
@@ -90,58 +91,6 @@ class SSHHoneypot(paramiko.ServerInterface):
         if kind == 'session':
             return OPEN_SUCCEEDED
         return OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
-
-    def deploy(self) -> None:
-        """
-        Deploy the SSH honeypot by starting the server socket and listener thread.
-        """
-        if self._is_running:
-            print("SSH Honeypot is already running")
-            return
-
-        try:
-            # Create server socket
-            self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self._server_socket.bind((self.bind_address, self.port))
-            self._server_socket.listen(5)
-
-            # Start server thread
-            self._is_running = True
-            self._server_thread = threading.Thread(target=self._accept_connections)
-            self._server_thread.daemon = True
-            self._server_thread.start()
-
-            print(f"SSH Honeypot deployed and listening on {self.bind_address}:{self.port}")
-
-        except Exception as e:
-            print(f"Error deploying SSH Honeypot: {str(e)}")
-            self.retract()
-            raise
-
-    def retract(self) -> None:
-        """
-        Safely shut down the SSH honeypot and clean up resources.
-        """
-        print("Shutting down SSH Honeypot...")
-        self._is_running = False
-
-        # Close server socket
-        if self._server_socket:
-            try:
-                self._server_socket.close()
-            except Exception as e:
-                print(f"Error closing server socket: {str(e)}")
-
-        # Wait for server thread to complete
-        if self._server_thread and self._server_thread.is_alive():
-            self._server_thread.join(timeout=5.0)
-
-        # Clean up
-        self._server_socket = None
-        self._server_thread = None
-
-        print("SSH Honeypot has been successfully shut down")
 
     # Private methods
     def _load_or_generate_host_key(self) -> None:
@@ -230,3 +179,55 @@ class SSHHoneypot(paramiko.ServerInterface):
                 client_socket.close()
             finally:
                 print(f"Connection closed from {addr[0]}:{addr[1]}")
+
+    def deploy(self) -> None:
+        """
+        Deploy the SSH honeypot by starting the server socket and listener thread.
+        """
+        if self._is_running:
+            print("SSH Honeypot is already running")
+            return
+
+        try:
+            # Create server socket
+            self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self._server_socket.bind((self.bind_address, self.port))
+            self._server_socket.listen(5)
+
+            # Start server thread
+            self._is_running = True
+            self._server_thread = threading.Thread(target=self._accept_connections)
+            self._server_thread.daemon = True
+            self._server_thread.start()
+
+            print(f"SSH Honeypot deployed and listening on {self.bind_address}:{self.port}")
+
+        except Exception as e:
+            print(f"Error deploying SSH Honeypot: {str(e)}")
+            self.retract()
+            raise
+
+    def retract(self) -> None:
+        """
+        Safely shut down the SSH honeypot and clean up resources.
+        """
+        print("Shutting down SSH Honeypot...")
+        self._is_running = False
+
+        # Close server socket
+        if self._server_socket:
+            try:
+                self._server_socket.close()
+            except Exception as e:
+                print(f"Error closing server socket: {str(e)}")
+
+        # Wait for server thread to complete
+        if self._server_thread and self._server_thread.is_alive():
+            self._server_thread.join(timeout=5.0)
+
+        # Clean up
+        self._server_socket = None
+        self._server_thread = None
+
+        print("SSH Honeypot has been successfully shut down")
