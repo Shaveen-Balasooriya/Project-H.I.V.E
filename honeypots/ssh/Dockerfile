@@ -10,7 +10,6 @@ RUN pip install -r requirements.txt
 # Copy the honeypot application files
 COPY main.py /app
 COPY SSHServer.py /app
-COPY config.yaml /app
 
 # Expose the port (documenting expected container port)
 EXPOSE 22
