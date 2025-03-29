@@ -1,8 +1,8 @@
-from podman_control.Podman import Podman
+from Podman import Podman
 
 def main() -> None:
     client = Podman()
-    client.check_config()
+    client.build_image('ssh')
 
 if __name__ == '__main__':
     main()
