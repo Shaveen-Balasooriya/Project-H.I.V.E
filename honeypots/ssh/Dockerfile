@@ -1,18 +1,10 @@
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements file and install dependencies
-COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+# Copy all files from the current directory (which is honeypots/ssh)
+COPY . /app/
 
-# Copy the honeypot application files
-COPY main.py /app
-COPY SSHServer.py /app
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port (documenting expected container port)
-EXPOSE 22
-
-# Run the honeypot application
 CMD ["python", "main.py"]
