@@ -227,13 +227,4 @@ class Podman:
             return False
 
 
-    def stop_honeypot(self) -> bool:
-        ...
 
-    def edit_honeypot(self) -> bool:
-        ...
-    def check_status_honeypot(self) -> bool:
-        ...
-
-    def delete_honeypot(self) -> bool:
-        ...
