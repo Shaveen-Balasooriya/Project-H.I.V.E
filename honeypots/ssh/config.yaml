@@ -1,0 +1,16 @@
+# config.yaml
+
+server:
+  ip_address: "0.0.0.0"
+  port: 22
+
+authentication:
+  allowed_users:
+    - username: "root"
+      password: "toor"
+    - username: "admin"
+      password: "admin123"
+
+ssh:
+  banner: "SSH-2.0-OpenSSH_8.2p1"
+  key_path: "ssh_host_rsa_key"
