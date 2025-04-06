@@ -6,7 +6,7 @@ class HoneypotManager:
     _client = podman.PodmanClient(base_url=_url)
 
     @staticmethod
-    def fetch_all_honeypots(self):
+    def fetch_all_honeypots(self) -> list[Honeypot]:
         honeypot_list = []
         try:
             # Filter containers with owner=hive label
@@ -21,7 +21,7 @@ class HoneypotManager:
             return []
 
     @staticmethod
-    def fetch_all_honeypots_by_type(self, honeypot_type: str):
+    def fetch_all_honeypots_by_type(self, honeypot_type: str) -> list[Honeypot]:
         honeypot_list = []
         try:
             # Filter containers with owner=hive label and type
@@ -38,7 +38,7 @@ class HoneypotManager:
             return []
 
     @staticmethod
-    def fetch_all_honeypots_by_status(self, honeypot_status: str):
+    def fetch_all_honeypots_by_status(self, honeypot_status: str) -> list[Honeypot]:
         try:
             honeypot_list = []
             containers = HoneypotManager._client.containers.list(
