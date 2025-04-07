@@ -24,8 +24,7 @@ class Honeypot:
             self.image = f'hive-{self.honeypot_type}-image'
             self.honeypot_name = f'hive-{self.honeypot_type}-{self.honeypot_port}'
             path_to_honeypot = os.path.join('.', 'honeypots', self.honeypot_type)
-            honeypot_config_path = os.path.abspath(os.path.join(path_to_honeypot,
-                                                                 'config.yaml'))
+            honeypot_config_path = os.path.abspath(os.path.join(path_to_honeypot,'config.yaml'))
             if self._honeypot_exist():
                 raise Exception('Honeypot already exists')
             if Honeypot._client.images.exists(self.image):
