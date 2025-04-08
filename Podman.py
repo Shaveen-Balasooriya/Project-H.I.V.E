@@ -98,7 +98,7 @@ class Podman:
             self.port_to_bind = port_to_bind
 
             image = f'h.i.v.e-image-{honeypot_type}'  # Image name
-            path = os.path.join('honeypots', honeypot_type)  # Path to the honeypot directory
+            path = os.path.join('app/honeypots', honeypot_type)  # Path to the honeypot directory
             config_path = os.path.abspath(os.path.join(path, 'config.yaml'))  # Path to the config file
             container_name = f'{honeypot_type}-{port_to_bind}-honeypot'  # Container name
 

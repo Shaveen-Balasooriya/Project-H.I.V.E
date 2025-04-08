@@ -1,12 +1,16 @@
+# app/models/honeypot.py
 import podman
 import os
+import logging
+from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
 
 class Honeypot:
     _url = 'unix:///tmp/podman.sock'
     _client = podman.PodmanClient(base_url=_url)
 
     def __init__(self) -> None:
-        # We actually only need these
         self.honeypot_id = None
         self.honeypot_type = None
         self.honeypot_port = None
@@ -36,13 +40,13 @@ class Honeypot:
                     return False
             else:
                 if self._build_image(path_to_honeypot):
-                    self.create_honeypot(honeypot_type,honeypot_port, honeypot_cpu_limit,
+                    self.create_honeypot(honeypot_type, honeypot_port, honeypot_cpu_limit,
                                          honeypot_cpu_quota, honeypot_memory_limit, honeypot_memory_swap_limit)
                     return True
                 else:
                     return False
         except Exception as e:
-            print(f"Error creating honeypot: {e}")  # Change to properly log the error
+            logger.error(f"Error creating honeypot: {e}")
             return False
 
     def start_honeypot(self):
@@ -51,7 +55,7 @@ class Honeypot:
             self.honeypot_status = Honeypot._client.containers.get(self.honeypot_name).status
             return True
         except Exception as e:
-            print(f"Error starting honeypot: {e}")
+            logger.error(f"Error starting honeypot: {e}")
             return False
 
     def restart_honeypot(self) -> bool:
@@ -60,7 +64,7 @@ class Honeypot:
             self.honeypot_status = Honeypot._client.containers.get(self.honeypot_name).status
             return True
         except Exception as e:
-            print(f"Error restarting honeypot: {e}") # Change this to log the changes
+            logger.error(f"Error restarting honeypot: {e}")
             return False
 
     def stop_honeypot(self) -> bool:
@@ -70,10 +74,10 @@ class Honeypot:
                 self.honeypot_status = Honeypot._client.containers.get(self.honeypot_name).status
                 return True
             else:
-                print('Honeypot already stopped')
+                logger.info('Honeypot already stopped')
                 return True
         except Exception as e:
-            print(f"Error stopping honeypot: {e}")
+            logger.error(f"Error stopping honeypot: {e}")
             return False
 
     def remove_honeypot(self) -> bool:
@@ -82,9 +86,9 @@ class Honeypot:
                 Honeypot._client.containers.get(self.honeypot_name).remove(timeout=10)
                 return True
             else:
-                raise Exception (f'Failed to stop honeypot {self.honeypot_name}. Cannot remove.')
+                raise Exception(f'Failed to stop honeypot {self.honeypot_name}. Cannot remove.')
         except Exception as e:
-            print(f"Error removing honeypot: {e}")
+            logger.error(f"Error removing honeypot: {e}")
             return False
 
     def get_honeypot_details(self, honeypot_id: str):
@@ -97,7 +101,7 @@ class Honeypot:
             self.image = container.image
             self.honeypot_type = container.labels.get('hive.type')
         except Exception as e:
-            print(f"Error getting honeypot details: {e}")
+            logger.error(f"Error getting honeypot details: {e}")
             return None
 
     def _build_image(self, path_to_honeypot) -> bool:
@@ -109,7 +113,7 @@ class Honeypot:
                 rm=True)
             return True
         except Exception as e:
-            print('Error building image:', e) # Change to properly log the error
+            logger.error(f'Error building image: {e}')
             return False
 
     def _build_container(self, honeypot_cpu_limit, honeypot_cpu_quota, honeypot_memory_limit,
@@ -142,12 +146,23 @@ class Honeypot:
             self.honeypot_id = container.id
             return True
         except Exception as e:
-            print('Error building container:', e) # Change to properly log the error
+            logger.error(f'Error building container: {e}')
             return False
 
     def _honeypot_exist(self) -> bool:
         try:
             return self._client.containers.exists(self.honeypot_name)
         except Exception as e:
-            print(f"Error checking if container exists: {e}")
+            logger.error(f"Error checking if container exists: {e}")
             return False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert honeypot object to dictionary"""
+        return {
+            "honeypot_id": self.honeypot_id,
+            "honeypot_type": self.honeypot_type,
+            "honeypot_port": self.honeypot_port,
+            "image": self.image,
+            "honeypot_name": self.honeypot_name,
+            "honeypot_status": self.honeypot_status
+        }
