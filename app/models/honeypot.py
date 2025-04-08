@@ -144,6 +144,7 @@ class Honeypot:
                 restart_policy={'Name': 'always'}
             )
             self.honeypot_id = container.id
+            self.honeypot_status = container.status
             return True
         except Exception as e:
             logger.error(f'Error building container: {e}')
@@ -162,7 +163,7 @@ class Honeypot:
             "honeypot_id": self.honeypot_id,
             "honeypot_type": self.honeypot_type,
             "honeypot_port": self.honeypot_port,
-            "image": self.image,
+            "image": str(self.image),
             "honeypot_name": self.honeypot_name,
             "honeypot_status": self.honeypot_status
         }

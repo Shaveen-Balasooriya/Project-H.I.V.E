@@ -1,7 +1,6 @@
 # app/routes/honeypot_routes.py
-from fastapi import APIRouter, HTTPException, Path, Depends
-from typing import List
-
+from fastapi import APIRouter, HTTPException
+from typing import List, Dict, Any
 from app.schemas.honeypot import HoneypotCreate, HoneypotResponse
 from app.controllers.honeypot_controller import HoneypotController
 
@@ -16,34 +15,47 @@ async def get_all_honeypots():
     """Get all honeypots"""
     try:
         honeypots = HoneypotController.get_all_honeypots()
-        if honeypots is None:
-            # Return empty list instead of None
+        if not honeypots:
             return []
         return honeypots
     except Exception as e:
-        # Log the error for debugging purposes
-        print(f"Error fetching honeypots: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve honeypots: {str(e)}")
-
-@router.get("/type/{honeypot_type}", response_model=List[HoneypotResponse])
-async def get_honeypots_by_type(honeypot_type: str = Path(..., description="Type of honeypot to filter by")):
-    """Get honeypots by type"""
-    return HoneypotController.get_honeypots_by_type(honeypot_type)
+        print(f'Error fetching honeypots: {str(e)}')
+        raise HTTPException(status_code=500, detail=f'Failed to retrieve honeypots: {str(e)}')
 
 @router.get("/status/{status}", response_model=List[HoneypotResponse])
-async def get_honeypots_by_status(status: str = Path(..., description="Status to filter by")):
+async def get_honeypots_by_status(status: str):
     """Get honeypots by status"""
-    return HoneypotController.get_honeypots_by_status(status)
+    try:
+        honeypots = HoneypotController.get_honeypots_by_status(status)
+        return honeypots
+    except Exception as e:
+        print(f'Error fetching honeypots by status: {str(e)}')
+        raise HTTPException(status_code=500, detail=f'Failed to retrieve honeypots: {str(e)}')
+
+@router.get("/type/{type}", response_model=List[HoneypotResponse])
+async def get_honeypots_by_type(honeypot_type: str):
+    """Get honeypots by type"""
+    try:
+        honeypots = HoneypotController.get_honeypots_by_type(honeypot_type)
+        return honeypots
+    except Exception as e:
+        print(f'Error fetching honeypots by type: {str(e)}')
+        raise HTTPException(status_code=500, detail=f'Failed to retrieve honeypots: {str(e)}')
 
 @router.get("/{honeypot_id}", response_model=HoneypotResponse)
-async def get_honeypot(honeypot_id: str = Path(..., description="ID of the honeypot to get")):
-    """Get a specific honeypot by ID"""
-    honeypot = HoneypotController.get_honeypot_by_id(honeypot_id)
-    if not honeypot:
-        raise HTTPException(status_code=404, detail="Honeypot not found")
-    return honeypot
+async def get_honeypot_by_id(honeypot_id: str):
+    """Get a honeypot by ID"""
+    try:
+        honeypot = HoneypotController.get_honeypot_by_id(honeypot_id)
+        if not honeypot:
+            raise HTTPException(status_code=404, detail="Honeypot not found")
+        return honeypot
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to retrieve honeypot: {str(e)}')
 
-@router.post("/", response_model=HoneypotResponse, status_code=201)
+@router.post("/", response_model=HoneypotResponse)
 async def create_honeypot(honeypot_data: HoneypotCreate):
     """Create a new honeypot"""
     try:
@@ -52,38 +64,49 @@ async def create_honeypot(honeypot_data: HoneypotCreate):
             raise HTTPException(status_code=400, detail="Failed to create honeypot")
         return honeypot
     except Exception as e:
-        # Log the error
-        print(f"Error creating honeypot: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating honeypot: {str(e)}")
+        print(f'Error creating honeypot: {str(e)}')
+        raise HTTPException(status_code=500, detail=f'Failed to create honeypot: {str(e)}')
 
 @router.post("/{honeypot_id}/start", response_model=HoneypotResponse)
-async def start_honeypot(honeypot_id: str = Path(..., description="ID of the honeypot to start")):
+async def start_honeypot(honeypot_id: str):
     """Start a honeypot"""
-    honeypot = HoneypotController.start_honeypot(honeypot_id)
-    if not honeypot:
-        raise HTTPException(status_code=404, detail="Honeypot not found or could not be started")
-    return honeypot
+    try:
+        honeypot = HoneypotController.start_honeypot(honeypot_id)
+        if not honeypot:
+            raise HTTPException(status_code=404, detail="Honeypot not found or failed to start")
+        return honeypot
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to start honeypot: {str(e)}')
 
 @router.post("/{honeypot_id}/stop", response_model=HoneypotResponse)
-async def stop_honeypot(honeypot_id: str = Path(..., description="ID of the honeypot to stop")):
+async def stop_honeypot(honeypot_id: str):
     """Stop a honeypot"""
-    honeypot = HoneypotController.stop_honeypot(honeypot_id)
-    if not honeypot:
-        raise HTTPException(status_code=404, detail="Honeypot not found or could not be stopped")
-    return honeypot
+    try:
+        honeypot = HoneypotController.stop_honeypot(honeypot_id)
+        if not honeypot:
+            raise HTTPException(status_code=404, detail="Honeypot not found or failed to stop")
+        return honeypot
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to stop honeypot: {str(e)}')
 
 @router.post("/{honeypot_id}/restart", response_model=HoneypotResponse)
-async def restart_honeypot(honeypot_id: str = Path(..., description="ID of the honeypot to restart")):
+async def restart_honeypot(honeypot_id: str):
     """Restart a honeypot"""
-    honeypot = HoneypotController.restart_honeypot(honeypot_id)
-    if not honeypot:
-        raise HTTPException(status_code=404, detail="Honeypot not found or could not be restarted")
-    return honeypot
+    try:
+        honeypot = HoneypotController.restart_honeypot(honeypot_id)
+        if not honeypot:
+            raise HTTPException(status_code=404, detail="Honeypot not found or failed to restart")
+        return honeypot
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to restart honeypot: {str(e)}')
 
-@router.delete("/{honeypot_id}", status_code=200)
-async def delete_honeypot(honeypot_id: str = Path(..., description="ID of the honeypot to delete")):
+@router.delete("/{honeypot_id}", response_model=Dict[str, Any])
+async def delete_honeypot(honeypot_id: str):
     """Delete a honeypot"""
-    success = HoneypotController.delete_honeypot(honeypot_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Honeypot not found or could not be deleted")
-    return {"success": True}
+    try:
+        success = HoneypotController.delete_honeypot(honeypot_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Honeypot not found or failed to delete")
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to delete honeypot: {str(e)}')

@@ -10,7 +10,8 @@ class HoneypotManager:
     _url = 'unix:///tmp/podman.sock'
     _client = podman.PodmanClient(base_url=_url)
 
-    def fetch_all_honeypots(self) -> List[Honeypot]:
+    @staticmethod
+    def fetch_all_honeypots() -> List[Honeypot]:
         honeypot_list = []
         try:
             # Filter containers with owner=hive label
@@ -24,13 +25,14 @@ class HoneypotManager:
             logger.error(f"Error fetching honeypots: {e}")
             return []
 
-    def fetch_all_honeypots_by_type(self, honeypot_type: str) -> List[Honeypot]:
+    @staticmethod
+    def fetch_all_honeypots_by_type(honeypot_type: str) -> List[Honeypot]:
         honeypot_list = []
         try:
             # Filter containers with owner=hive label and type
             containers = HoneypotManager._client.containers.list(
                 all=True,
-                filters={'label': [f'owner=hive', f'hive.type={honeypot_type}']}
+                filters={'label': [f'owner=hive', f'hive.type=ssh']}
             )
             for container in containers:
                 honeypot = Honeypot()
@@ -41,7 +43,8 @@ class HoneypotManager:
             logger.error(f"Error fetching honeypots by type: {e}")
             return []
 
-    def fetch_all_honeypots_by_status(self, honeypot_status: str) -> List[Honeypot]:
+    @staticmethod
+    def fetch_all_honeypots_by_status(honeypot_status: str) -> List[Honeypot]:
         try:
             honeypot_list = []
             # Fixed the filter structure
@@ -58,7 +61,8 @@ class HoneypotManager:
             logger.error(f"Error fetching honeypots by status: {e}")
             return []
 
-    def get_honeypot_by_id(self, honeypot_id: str) -> Honeypot | None:
+    @staticmethod
+    def get_honeypot_by_id(honeypot_id: str) -> Honeypot | None:
         """Get a honeypot by ID"""
         try:
             honeypot = Honeypot()
