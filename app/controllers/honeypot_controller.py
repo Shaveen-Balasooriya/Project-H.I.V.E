@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional, Dict, Any
 
+from app.exceptions.honeypot_exceptions import HoneypotError
 from app.models.honeypot import Honeypot
 from app.models.honeypot_manager import HoneypotManager
 from app.schemas.honeypot import HoneypotCreate, HoneypotUpdate
@@ -47,19 +48,22 @@ class HoneypotController:
     @staticmethod
     def create_honeypot(honeypot_data: HoneypotCreate) -> Optional[Dict[str, Any]]:
         """Create a new honeypot"""
-        honeypot = Honeypot()
-        success = honeypot.create_honeypot(
-            honeypot_type=honeypot_data.honeypot_type,
-            honeypot_port=honeypot_data.honeypot_port,
-            honeypot_cpu_limit=honeypot_data.honeypot_cpu_limit,
-            honeypot_cpu_quota=honeypot_data.honeypot_cpu_quota,
-            honeypot_memory_limit=honeypot_data.honeypot_memory_limit,
-            honeypot_memory_swap_limit=honeypot_data.honeypot_memory_swap_limit
-        )
+        try:
+            honeypot = Honeypot()
+            success = honeypot.create_honeypot(
+                honeypot_type=honeypot_data.honeypot_type,
+                honeypot_port=honeypot_data.honeypot_port,
+                honeypot_cpu_limit=honeypot_data.honeypot_cpu_limit,
+                honeypot_cpu_quota=honeypot_data.honeypot_cpu_quota,
+                honeypot_memory_limit=honeypot_data.honeypot_memory_limit,
+                honeypot_memory_swap_limit=honeypot_data.honeypot_memory_swap_limit
+            )
 
-        if success:
-            return honeypot.to_dict()
-        return None
+            if success:
+                return honeypot.to_dict()
+            return None
+        except HoneypotError as e:
+            raise
 
     @staticmethod
     def start_honeypot(honeypot_id: str) -> Optional[Dict[str, Any]]:

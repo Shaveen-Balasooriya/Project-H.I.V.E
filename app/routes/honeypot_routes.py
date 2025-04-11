@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
 from app.schemas.honeypot import HoneypotCreate, HoneypotResponse
 from app.controllers.honeypot_controller import HoneypotController
+from app.exceptions.honeypot_exceptions import HoneypotExistsError, HoneypotImageError, HoneypotContainerError
 
 router = APIRouter(
     prefix="/honeypots",
@@ -63,6 +64,13 @@ async def create_honeypot(honeypot_data: HoneypotCreate):
         if not honeypot:
             raise HTTPException(status_code=400, detail="Failed to create honeypot")
         return honeypot
+    except HoneypotExistsError as e:
+        # Status 409 Conflict is appropriate for "already exists" errors
+        raise HTTPException(status_code=409, detail=str(e))
+    except HoneypotImageError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HoneypotContainerError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f'Error creating honeypot: {str(e)}')
         raise HTTPException(status_code=500, detail=f'Failed to create honeypot: {str(e)}')

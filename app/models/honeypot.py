@@ -3,7 +3,8 @@ import podman
 import os
 import logging
 from typing import Dict, Any
-
+from app.exceptions.honeypot_exceptions import (HoneypotExistsError, HoneypotImageError,
+                                                HoneypotContainerError, HoneypotError)
 logger = logging.getLogger(__name__)
 
 class Honeypot:
@@ -30,23 +31,26 @@ class Honeypot:
             path_to_honeypot = os.path.join('.', 'honeypots', self.honeypot_type)
             honeypot_config_path = os.path.abspath(os.path.join(path_to_honeypot,'config.yaml'))
             if self._honeypot_exist():
-                raise Exception('Honeypot already exists')
+                raise HoneypotExistsError(f'Honeypot {self.honeypot_name} already exists')
             if Honeypot._client.images.exists(self.image):
                 if self._build_container(honeypot_cpu_limit, honeypot_cpu_quota,
                                          honeypot_memory_limit, honeypot_memory_swap_limit,
                                          honeypot_config_path):
                     return True
                 else:
-                    return False
+                    raise HoneypotContainerError(f'Failed to create container {self.honeypot_name}')
             else:
                 if self._build_image(path_to_honeypot):
                     self.create_honeypot(honeypot_type, honeypot_port, honeypot_cpu_limit,
                                          honeypot_cpu_quota, honeypot_memory_limit, honeypot_memory_swap_limit)
                     return True
                 else:
-                    return False
-        except Exception as e:
+                    raise HoneypotImageError(f'Failed to create image {self.honeypot_name}')
+        except (HoneypotContainerError, HoneypotImageError, HoneypotExistsError) as e:
             logger.error(f"Error creating honeypot: {e}")
+            raise
+        except Exception as e:
+            print(f'Error creating honeypot {e}')
             return False
 
     def start_honeypot(self):
