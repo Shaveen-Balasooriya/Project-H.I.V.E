@@ -1,5 +1,4 @@
-# app/schemas/honeypot.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 class HoneypotCreate(BaseModel):
@@ -10,6 +9,15 @@ class HoneypotCreate(BaseModel):
     honeypot_cpu_quota: int = Field(50000, description="CPU quota for the honeypot")
     honeypot_memory_limit: str = Field("512m", description="Memory limit for the honeypot")
     honeypot_memory_swap_limit: str = Field("512m", description="Memory swap limit for the honeypot")
+
+    @field_validator("honeypot_port")
+    def port_must_be_valid(cls, v):
+        # Only validate port range, not privileges
+        if v <= 0:
+            raise ValueError("Port number must be greater than 0")
+        if v > 65535:
+            raise ValueError("Port number must be less than or equal to 65535")
+        return v
 
 class HoneypotResponse(BaseModel):
     """Schema for honeypot responses"""
@@ -31,10 +39,3 @@ class HoneypotResponse(BaseModel):
                 "honeypot_status": "running"
             }
         }
-
-class HoneypotUpdate(BaseModel):
-    """Schema for updating honeypot properties (if needed)"""
-    honeypot_cpu_limit: Optional[int] = None
-    honeypot_cpu_quota: Optional[int] = None
-    honeypot_memory_limit: Optional[str] = None
-    honeypot_memory_swap_limit: Optional[str] = None

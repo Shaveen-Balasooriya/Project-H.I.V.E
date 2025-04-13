@@ -1,4 +1,3 @@
-# app/exceptions/honeypot_exceptions.py
 class HoneypotError(Exception):
     """Base exception for honeypot errors"""
     pass
@@ -13,4 +12,8 @@ class HoneypotImageError(HoneypotError):
 
 class HoneypotContainerError(HoneypotError):
     """Raised when there's an error with the honeypot container"""
+    pass
+
+class HoneypotPrivilegedPortError(HoneypotError):
+    """Error raised when trying to use a privileged port (<1024) in rootless mode"""
     pass
