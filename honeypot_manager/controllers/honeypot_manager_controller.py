@@ -34,7 +34,8 @@ ERROR_MESSAGES = {
     PodmanError: (
         "Container system error. Please try again later", status.HTTP_500_INTERNAL_SERVER_ERROR),
     APIError: (  # Add handling for APIError specifically
-        "Container system API error. Please try again later", status.HTTP_500_INTERNAL_SERVER_ERROR),
+        "Container system API error. Make sure Podman system service is running",
+        status.HTTP_500_INTERNAL_SERVER_ERROR),
     PermissionError: (
         "Insufficient permissions to perform this operation", status.HTTP_403_FORBIDDEN),
 }
