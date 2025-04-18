@@ -1,2 +1,3 @@
 .idea
 /Honeypots/SSH/ssh_host_key
+*.pyc
