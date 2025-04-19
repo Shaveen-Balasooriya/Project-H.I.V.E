@@ -17,3 +17,7 @@ class HoneypotContainerError(HoneypotError):
 class HoneypotPrivilegedPortError(HoneypotError):
     """Error raised when trying to use a privileged port (<1024) in rootless mode"""
     pass
+
+class HoneypotTypeNotFoundError(HoneypotError):
+    """Error raised when attempting to use a honeypot type that doesn't exist in configuration"""
+    pass

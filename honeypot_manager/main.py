@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uvicorn
 
-from honeypot_manager.controllers.honeypot_manager_controller import router as honeypot_router
+from controllers.honeypot_manager_controller import router as honeypot_router
 
 # Configure logging
 logging.basicConfig(

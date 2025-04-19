@@ -1,0 +1,11 @@
+authentication:
+  allowed_users:
+    - username: "admin"
+      password: "admin123"
+    - username: "user"
+      password: "password123"
+
+ftp:
+  banner: "220 Welcome to FTP Server"
+  max_connections: 10
+  connection_limit: 32768
