@@ -92,8 +92,6 @@ class HoneypotConfig:
 class Honeypot:
     _url = 'unix:///tmp/podman.sock'
     _client = podman.PodmanClient(base_url=_url)
-    
-    # Base directory for honeypots
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     def __init__(self) -> None:

@@ -107,7 +107,6 @@ def setup_authorizer(config):
 
     # Create dummy files in bait directory if it's empty
     create_dummy_files(bait_dir)
-
     # Add users from the configuration file
     users_added = []
     if 'authentication' in config and 'allowed_users' in config['authentication']:

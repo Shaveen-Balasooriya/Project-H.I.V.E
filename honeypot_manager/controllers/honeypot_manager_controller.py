@@ -71,7 +71,6 @@ def handle_honeypot_error(e: Exception) -> HTTPException:
         # For file not found errors, include path information
         elif error_type == FileNotFoundError:
             message = f"File or directory not found: {str(e)}"
-
     else:
         message = f"An unexpected error occurred: {str(e)}"
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
