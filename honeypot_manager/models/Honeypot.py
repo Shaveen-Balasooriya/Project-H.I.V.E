@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class HoneypotConfig:
     """Configuration class for different honeypot types that loads from external YAML file"""
-
+    
     CONFIG_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                                    "config", "honeypot_configs.yaml")
     

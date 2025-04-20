@@ -104,7 +104,7 @@ def setup_authorizer(config):
     # Create bait directory if it doesn't exist
     os.makedirs(bait_dir, exist_ok=True)
     logger.info(f"Bait directory set to: {bait_dir}")
-    
+
     # Create dummy files in bait directory if it's empty
     create_dummy_files(bait_dir)
 
