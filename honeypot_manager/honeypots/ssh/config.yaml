@@ -1,9 +1,4 @@
 # config.yaml
-
-server:
-  ip_address: "0.0.0.0"
-  port: 22
-
 authentication:
   allowed_users:
     - username: "root"
