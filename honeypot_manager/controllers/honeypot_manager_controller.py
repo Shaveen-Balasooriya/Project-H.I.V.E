@@ -71,7 +71,6 @@ def handle_honeypot_error(e: Exception) -> HTTPException:
         # For file not found errors, include path information
         elif error_type == FileNotFoundError:
             message = f"File or directory not found: {str(e)}"
-
     else:
         message = f"An unexpected error occurred: {str(e)}"
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -169,7 +168,6 @@ async def create_honeypot(honeypot_data: HoneypotCreate):
         # Validate honeypot type exists before attempting creation
         if not HoneypotConfig.type_exists(honeypot_data.honeypot_type):
             raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_data.honeypot_type}' not found in configuration")
-       
         # Validate honeypot directory exists
         honeypot_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
