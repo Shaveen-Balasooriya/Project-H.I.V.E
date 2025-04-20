@@ -16,8 +16,7 @@ logger = logging.getLogger(__name__)
 
 class HoneypotConfig:
     """Configuration class for different honeypot types that loads from external YAML file"""
-    
-    # Update path to place the config file in the config directory of the project
+
     CONFIG_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                                    "config", "honeypot_configs.yaml")
     
@@ -72,7 +71,6 @@ class HoneypotConfig:
     def get_config(cls, honeypot_type: str) -> Dict:
         """Get configuration for specific honeypot type"""
         configs = cls.load_configs()
-        # If the honeypot type isn't in the config, raise a type not found error
         if honeypot_type not in configs:
             logger.error(f"Honeypot type '{honeypot_type}' not found in configuration")
             raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_type}' not found in configuration")
@@ -94,6 +92,9 @@ class HoneypotConfig:
 class Honeypot:
     _url = 'unix:///tmp/podman.sock'
     _client = podman.PodmanClient(base_url=_url)
+    
+    # Base directory for honeypots
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     def __init__(self) -> None:
         self.honeypot_id = None
@@ -128,8 +129,16 @@ class Honeypot:
             self.honeypot_port = honeypot_port
             self.honeypot_name = f'hive-{self.honeypot_type}-{self.honeypot_port}'
             _honeypot_image = f'hive-{self.honeypot_type}-image'
-            _path_to_honeypot = os.path.join('.', 'honeypots', self.honeypot_type)
-            _honeypot_config_path = os.path.abspath(os.path.join(_path_to_honeypot,'config.yaml'))
+            
+            # Use absolute path for honeypot directory
+            _path_to_honeypot = os.path.join(self.BASE_DIR, 'honeypots', self.honeypot_type)
+            
+            # Check if honeypot directory exists
+            if not os.path.exists(_path_to_honeypot):
+                logger.error(f"Honeypot directory not found: {_path_to_honeypot}")
+                raise FileNotFoundError(f"Honeypot directory not found: {_path_to_honeypot}")
+                
+            _honeypot_config_path = os.path.abspath(os.path.join(_path_to_honeypot, 'config.yaml'))
 
             if self._honeypot_exist():
                 raise HoneypotExistsError('Honeypot already exists')
@@ -149,6 +158,9 @@ class Honeypot:
                     return True
                 else:
                     raise HoneypotImageError('Failed to build image for the honeypot')
+        except FileNotFoundError as e:
+            logger.error(f"File not found error: {str(e)}")
+            raise HoneypotError(f"File not found: {str(e)}")
         except (HoneypotError, HoneypotExistsError, HoneypotContainerError, HoneypotImageError, HoneypotTypeNotFoundError) as e:
             raise HoneypotError(str(e))
         except PodmanError as e:
@@ -235,7 +247,7 @@ class Honeypot:
         }
         
         # Get additional volumes based on honeypot type
-        honeypot_dir = os.path.join('.', 'honeypots', self.honeypot_type)
+        honeypot_dir = os.path.join(self.BASE_DIR, 'honeypots', self.honeypot_type)
         config = HoneypotConfig.get_config(self.honeypot_type)
         
         for volume_name in config.get("volumes", []):
