@@ -9,6 +9,7 @@ from util.exceptions import (
     HoneypotPrivilegedPortError, HoneypotTypeNotFoundError
 )
 from util.podman_client import get_podman_client
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +43,8 @@ ERROR_MESSAGES = {
         status.HTTP_500_INTERNAL_SERVER_ERROR),
     PermissionError: (
         "Insufficient permissions to perform this operation", status.HTTP_403_FORBIDDEN),
+    FileNotFoundError: (
+        "Required files or directories not found", status.HTTP_500_INTERNAL_SERVER_ERROR),
 }
 
 
@@ -65,6 +68,10 @@ def handle_honeypot_error(e: Exception) -> HTTPException:
             except Exception:
                 # If we can't get available types, just use the default message
                 pass
+        # For file not found errors, include path information
+        elif error_type == FileNotFoundError:
+            message = f"File or directory not found: {str(e)}"
+
     else:
         message = f"An unexpected error occurred: {str(e)}"
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -162,6 +169,15 @@ async def create_honeypot(honeypot_data: HoneypotCreate):
         # Validate honeypot type exists before attempting creation
         if not HoneypotConfig.type_exists(honeypot_data.honeypot_type):
             raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_data.honeypot_type}' not found in configuration")
+       
+        # Validate honeypot directory exists
+        honeypot_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'honeypots', 
+            honeypot_data.honeypot_type
+        )
+        if not os.path.exists(honeypot_path):
+            raise FileNotFoundError(f"Honeypot directory '{honeypot_path}' does not exist")
             
         honeypot = Honeypot()
         success = honeypot.create_honeypot(

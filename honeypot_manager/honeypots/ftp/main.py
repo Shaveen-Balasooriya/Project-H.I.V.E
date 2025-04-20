@@ -1,12 +1,79 @@
 import os
 import yaml
-import logging
+import random
+import datetime
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.servers import FTPServer as FTPS
 from pyftpdlib.handlers import ThrottledDTPHandler
 from FTPServer import FTPServer, logger, PASSIVE_PORT_START, PASSIVE_PORT_END
 
 CONFIG_FILE = "config.yaml"
+
+def create_dummy_files(directory):
+    """Create realistic-looking dummy files in the specified directory"""
+    # Check if directory already has files (but create dummy files anyway)
+    existing_files = os.listdir(directory)
+    if existing_files:
+        logger.info(f"Bait directory already contains {len(existing_files)} files, adding dummy files anyway")
+    
+    dummy_files = [
+        {
+            "name": "backup.zip",
+            "content": "PK\x03\x04\x14\x00\x00\x00\x08\x00\xFDCEVeO\x7F\x93\x12\x00\x00\x00\x1A\x00\x00\x00\x0C\x00\x00\x00passwords.txt",
+            "type": "binary"
+        },
+        {
+            "name": "readme.txt",
+            "content": "This directory contains important backup files and documentation.\nPlease do not modify or delete any files without authorization.",
+            "type": "text"
+        },
+        {
+            "name": "config.ini", 
+            "content": "[database]\nhost=192.168.1.100\nuser=admin\npassword=db@dm1n\n\n[api]\nkey=38a4b7c9d1e2f0\nsecret=39dj48dls2j",
+            "type": "text"
+        },
+        {
+            "name": "access_log.csv",
+            "content": "timestamp,user,ip,action\n" + "\n".join([
+                f"{(datetime.datetime.now() - datetime.timedelta(days=random.randint(1, 30), hours=random.randint(1, 23))).strftime('%Y-%m-%d %H:%M:%S')},admin,192.168.1.{random.randint(2, 254)},login" 
+                for _ in range(5)
+            ]),
+            "type": "text"
+        },
+        {
+            "name": "server_notes.txt",
+            "content": "TODO:\n- Update firewall rules\n- Change default credentials on routers\n- Check backup integrity\n- Upgrade database to latest version",
+            "type": "text"
+        },
+        {
+            "name": "users.db",
+            "content": "SQLite format 3" + "\x00" * 20 + "CREATE TABLE users(id INTEGER PRIMARY KEY, username TEXT, password TEXT, email TEXT)",
+            "type": "binary"
+        }
+    ]
+    
+    # Write files to the directory
+    for file_info in dummy_files:
+        file_path = os.path.join(directory, file_info["name"])
+        
+        # Skip if file already exists with same name
+        if os.path.exists(file_path):
+            logger.info(f"Skipping existing file: {file_info['name']}")
+            continue
+            
+        mode = "wb" if file_info["type"] == "binary" else "w"
+        
+        with open(file_path, mode) as f:
+            f.write(file_info["content"])
+        
+        # Set realistic timestamps
+        past_time = datetime.datetime.now() - datetime.timedelta(days=random.randint(30, 180))
+        mod_time = past_time.timestamp()
+        os.utime(file_path, (mod_time, mod_time))
+        
+        logger.info(f"Created dummy bait file: {file_info['name']}")
+    
+    logger.info(f"Finished creating dummy bait files")
 
 def load_config():
     """Load configuration from YAML file"""
@@ -37,6 +104,9 @@ def setup_authorizer(config):
     # Create bait directory if it doesn't exist
     os.makedirs(bait_dir, exist_ok=True)
     logger.info(f"Bait directory set to: {bait_dir}")
+
+    # Create dummy files in bait directory if it's empty
+    create_dummy_files(bait_dir)
 
     # Add users from the configuration file
     users_added = []
