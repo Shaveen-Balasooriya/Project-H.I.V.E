@@ -5,7 +5,8 @@
 ssh:
   ports:
     "22/tcp": "honeypot_port"
-  volumes: []
+  volumes: 
+    - "logs"
   passive_ports: null
   description: "SSH honeypot for capturing login attempts"
 
