@@ -41,6 +41,7 @@ class FTPServer(FTPHandler):
     
     # Update passive port range to match container configuration
     passive_ports = range(PASSIVE_PORT_START, PASSIVE_PORT_END + 1)
+    permit_foreign_addresses = True
     
     def __init__(self, *args, **kwargs):
         self.client_ip = None
