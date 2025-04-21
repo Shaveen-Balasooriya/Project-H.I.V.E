@@ -1,0 +1,9 @@
+
+allowed_users:
+  - username: "admin"
+    password: "admin123"
+  - username: "user"
+    password: "passw0rd"
+
+server_header: "Apache/2.4.41"
+auth_realm: "Secure Area"
