@@ -21,6 +21,13 @@ ftp:
     - 60100
   description: "FTP honeypot with secure file quarantine"
 
+http:
+  ports:
+    "80/tcp": "honeypot_port"
+  volumes:
+    - "logs"
+  description: "HTTP honeypot for capturing web-based attacks"
+
 # Example of how to add a new honeypot type:
 # http:
 #   ports:
