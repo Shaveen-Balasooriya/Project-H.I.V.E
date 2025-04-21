@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
-from typing import List
+from typing import List, Dict
 import logging
 from podman.errors import PodmanError, APIError
-from honeypot_manager.schemas.honeypot import HoneypotCreate, HoneypotResponse
-from honeypot_manager.models.Honeypot import Honeypot
-from honeypot_manager.util.exceptions import (
-    HoneypotError, HoneypotExistsError, HoneypotImageError, HoneypotContainerError, HoneypotPrivilegedPortError
+from schemas.honeypot import HoneypotCreate, HoneypotResponse
+from models.Honeypot import Honeypot, HoneypotConfig
+from util.exceptions import (
+    HoneypotError, HoneypotExistsError, HoneypotImageError, HoneypotContainerError, 
+    HoneypotPrivilegedPortError, HoneypotTypeNotFoundError
 )
-from honeypot_manager.util.podman_client import get_podman_client
+from util.podman_client import get_podman_client
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +33,9 @@ ERROR_MESSAGES = {
     HoneypotPrivilegedPortError: (
         "Port permission error: Ports below 1024 require root privileges or special system configuration",
         status.HTTP_400_BAD_REQUEST),
+    HoneypotTypeNotFoundError: (
+        "Honeypot type not found. Please use one of the available types from the /honeypot-manager/types endpoint",
+        status.HTTP_404_NOT_FOUND),
     PodmanError: (
         "Container system error. Please try again later", status.HTTP_500_INTERNAL_SERVER_ERROR),
     APIError: (  # Add handling for APIError specifically
@@ -38,6 +43,8 @@ ERROR_MESSAGES = {
         status.HTTP_500_INTERNAL_SERVER_ERROR),
     PermissionError: (
         "Insufficient permissions to perform this operation", status.HTTP_403_FORBIDDEN),
+    FileNotFoundError: (
+        "Required files or directories not found", status.HTTP_500_INTERNAL_SERVER_ERROR),
 }
 
 
@@ -48,6 +55,22 @@ def handle_honeypot_error(e: Exception) -> HTTPException:
     error_type = type(e)
     if error_type in ERROR_MESSAGES:
         message, status_code = ERROR_MESSAGES[error_type]
+        
+        # For type not found error, include more context from the exception
+        if error_type == HoneypotTypeNotFoundError:
+            # Extract the honeypot type from the error message if available
+            message = str(e) if str(e) else message
+            # Include list of available types in the error message
+            try:
+                available_types = Honeypot.get_available_honeypot_types()
+                if available_types:
+                    message = f"{message}. Available types: {', '.join(available_types)}"
+            except Exception:
+                # If we can't get available types, just use the default message
+                pass
+        # For file not found errors, include path information
+        elif error_type == FileNotFoundError:
+            message = f"File or directory not found: {str(e)}"
     else:
         message = f"An unexpected error occurred: {str(e)}"
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -77,6 +100,10 @@ async def get_all_honeypots():
 async def get_honeypots_by_type(honeypot_type: str):
     """Get all honeypots of a specific type"""
     try:
+        # Validate that the type exists
+        if not HoneypotConfig.type_exists(honeypot_type):
+            raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_type}' not found in configuration")
+
         honeypot_list = []
         containers = get_podman_client().containers.list(all=True, filters={'label': f'hive.type='
                                                                                   f'{honeypot_type}'})
@@ -138,6 +165,18 @@ async def get_honeypot(honeypot_name: str):
 async def create_honeypot(honeypot_data: HoneypotCreate):
     """Create a new honeypot"""
     try:
+        # Validate honeypot type exists before attempting creation
+        if not HoneypotConfig.type_exists(honeypot_data.honeypot_type):
+            raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_data.honeypot_type}' not found in configuration")
+        # Validate honeypot directory exists
+        honeypot_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'honeypots', 
+            honeypot_data.honeypot_type
+        )
+        if not os.path.exists(honeypot_path):
+            raise FileNotFoundError(f"Honeypot directory '{honeypot_path}' does not exist")
+            
         honeypot = Honeypot()
         success = honeypot.create_honeypot(
             honeypot_type=honeypot_data.honeypot_type,
@@ -268,5 +307,27 @@ async def delete_honeypot(honeypot_name: str):
 
     except HTTPException as e:
         raise e
+    except Exception as e:
+        raise handle_honeypot_error(e)
+
+
+@router.get("/types", response_model=List[str])
+async def get_honeypot_types():
+    """Get a list of all available honeypot types from configuration"""
+    try:
+        return Honeypot.get_available_honeypot_types()
+    except Exception as e:
+        raise handle_honeypot_error(e)
+
+
+@router.get("/types/{honeypot_type}/config")
+async def get_honeypot_type_config(honeypot_type: str):
+    """Get the configuration details for a specific honeypot type"""
+    try:
+        if not HoneypotConfig.type_exists(honeypot_type):
+            raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_type}' not found in configuration")
+        
+        config = HoneypotConfig.get_config(honeypot_type)
+        return config
     except Exception as e:
         raise handle_honeypot_error(e)
