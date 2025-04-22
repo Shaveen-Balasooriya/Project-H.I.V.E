@@ -3,9 +3,11 @@ import datetime
 import logging
 import paramiko
 import threading
-import re
 import shlex
 from typing import List, Dict, Any, Tuple, NamedTuple
+from NATSPublisher import NATSPublisher
+import asyncio
+
 
 # Configure logging with absolute paths to ensure logs go to the volume mount
 LOG_DIR = os.path.abspath('/app/logs')
@@ -167,7 +169,12 @@ class SSHServer(paramiko.ServerInterface):
             "ip": self.client_ip,
             "timestamp": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
-        
+
+        self.authenticated = True
+        self.username = username
+        self.password = password
+        self.executed_commands = []
+
         logger.info(f"Password authentication attempt: {log_data}")
         
         for user in self.allowed_users:
@@ -242,10 +249,7 @@ class SSHServer(paramiko.ServerInterface):
             transport.local_version = self.banner  # Set SSH banner
 
             # Create server instance with same configuration
-            server = SSHServer({
-                "authentication": {"allowed_users": self.allowed_users},
-                "ssh": {"key_path": self.ssh_key_path, "banner": self.banner},
-            })
+            server = self
             server.client_ip = self.client_ip
             server.session_start = self.session_start
             server.session_id = self.session_id
@@ -291,10 +295,41 @@ class SSHServer(paramiko.ServerInterface):
         except Exception as e:
             logger.error(f"Exception handling connection from {self.client_ip}: {str(e)}")
         finally:
+            session_end = datetime.datetime.now()
+            session_duration = (session_end - self.session_start).total_seconds()
+
             if transport:
                 transport.close()
-            session_duration = (datetime.datetime.now() - self.session_start).total_seconds()
+
             logger.info(f"Connection from {self.client_ip} closed. Session duration: {session_duration:.2f} seconds")
+
+            
+            if self.authenticated:
+                log_data = {
+                    "ip": self.client_ip,
+                    "port": addr[1],
+                    "username": self.username,
+                    "password": self.password,
+                    "user_agent": self.banner,
+                    "entered_time": self.session_start.strftime("%Y-%m-%d %H:%M:%S"),
+                    "exited_time": session_end.strftime("%Y-%m-%d %H:%M:%S"),
+                    "commands": self.executed_commands
+                }
+
+                async def send_log():
+                    publisher = NATSPublisher()
+                    logger.warning("Initializing NATS Publisher...")
+                    await publisher.initialize()
+                    logger.warning("Publishing log to NATS...")
+                    await publisher.publish_log("logs.honeypot", log_data)
+                    logger.warning("Sending log to NATS...")
+                try:
+                    asyncio.run(send_log())
+                    logger.warning(f"Log sent to NATS for session {self.session_id}")
+                except Exception as e:
+                    logger.error(f"Failed to send log to NATS: {e}", exc_info=True)
+            else:
+                logger.critical("I am from out side the if block")
 
     def _handle_command_session(self, chan) -> None:
         """
@@ -406,6 +441,10 @@ class SSHServer(paramiko.ServerInterface):
         """
         # Sanitize and normalize command
         cmd = cmd.strip()
+
+        if hasattr(self, "authenticated") and self.authenticated:
+            if hasattr(self, "executed_commands"):
+                self.executed_commands.append(cmd)
         
         # Empty command case
         if not cmd:

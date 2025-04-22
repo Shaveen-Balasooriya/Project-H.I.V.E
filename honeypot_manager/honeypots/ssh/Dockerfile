@@ -12,4 +12,6 @@ RUN mkdir -p /app/logs && chmod 755 /app/logs
 # Define volume for logs to persist outside the container
 VOLUME ["/app/logs"]
 
+ENV NATS_URL="nats://host.containers.internal:4222"
+
 CMD ["python", "main.py"]
