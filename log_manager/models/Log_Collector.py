@@ -1,5 +1,6 @@
 import time
 from util.podman_client import PodmanClientSingleton
+import os
 
 class Log_Collector(): 
 
@@ -8,6 +9,7 @@ class Log_Collector():
         self._container_name = "hive-log-collector"
         self._network_name = "hive-net"
         self._image_name = "hive-log-collector"
+        self._log_collector_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "log_collector")
 
     def __del__(self):
         try:
@@ -17,19 +19,17 @@ class Log_Collector():
 
     def create_log_collector(self): 
         try:
-            if self._client.images.exists(self._image_name):
-                print("Image already exists!")
-                image = self._client.images.get(self._image_name)
-            else:
-                image = self._client.images.pull(self._image_name)
-                print("Image pulled successfully")
-
+            # First build the image if it doesn't exist
+            if not self._build_log_collector_image():
+                print("[✗] Failed to build log collector image.")
+                return False
+                
             if self._client.containers.exists(self._container_name):
-                print("Container already exists!")
+                print("[✓] Container already exists!")
                 return True
             else:
                 container = self._client.containers.create(
-                    image=image,
+                    image=self._image_name,
                     name=self._container_name,
                     hostname=self._container_name,
                     networks={self._network_name: {"aliases": [self._container_name]}},
@@ -44,10 +44,10 @@ class Log_Collector():
                     security_opt=["no-new-privileges"]
                 )
                 container.start()
-                print("Container started successfully")
+                print("[✓] Container started successfully")
                 return True
         except Exception as e:
-            print("Error creating log collector container", e)
+            print(f"[✗] Error creating log collector container: {e}")
             return False
 
     def stop_log_collector(self):
@@ -83,21 +83,24 @@ class Log_Collector():
     def _build_log_collector_image(self):
         try:
             if self._client.images.exists(self._image_name):
-                print("Image already exists!")
+                print("[✓] Image already exists!")
                 return True
             else:
+                print(f"[~] Building image from {self._log_collector_dir}")
                 try:
                     self._client.images.build(
-                        path=".",
+                        path=self._log_collector_dir,
                         dockerfile="Dockerfile.subscriber",
                         tag=self._image_name,
                         rm=True
                     )
+                    print(f"[✓] Successfully built image: {self._image_name}")
+                    return True
                 except Exception as e:
-                    print("Error building the image", e)
+                    print(f"[✗] Error building the image: {e}")
                     return False
         except Exception as e:
-            print("Error in the overall builder ", e)
+            print(f"[✗] Error in the overall builder: {e}")
             return False
         
     def get_log_collector_status(self):
