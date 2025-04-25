@@ -126,4 +126,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    logger.info("Checking if the changes got through. New changes are being made.=+++ASD+SAD+SA+DAS+DAS+DASD")
     main()

@@ -103,6 +103,7 @@ class Honeypot:
         self.honeypot_image = None
         self.honeypot_status = None
         self.honeypot_type = None
+        self._network_name = "hive-net"
 
     @staticmethod
     def get_client() -> podman.PodmanClient:
@@ -284,11 +285,16 @@ class Honeypot:
                 },
                 volumes=volumes,
                 hostname=self.honeypot_name,
+                networks={self._network_name: {"aliases": [self.honeypot_name]}},
+                network_mode="bridge",
                 cpu_period=honeypot_cpu_limit,
                 cpu_quota=honeypot_cpu_quota,
                 mem_limit=honeypot_memory_limit,
                 memswap_limit=honeypot_memory_swap_limit,
                 security_opt=['no-new-privileges'],
+                environment={
+                    'NATS_URL': 'nats://hive-nats-server:4222'
+                },
                 restart_policy={'Name': 'always'}
             )
             self.honeypot_id = container.id
