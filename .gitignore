@@ -2,3 +2,5 @@
 /Honeypots/SSH/ssh_host_key
 *.pyc
 *.log
+.venv
+__pycache__/
