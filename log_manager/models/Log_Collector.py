@@ -1,129 +1,104 @@
-import time
-from util.podman_client import PodmanClientSingleton
+import subprocess
 import os
+import sys
 
-class Log_Collector(): 
-
+class Log_Collector_Subprocess:
     def __init__(self):
-        self._client = PodmanClientSingleton().client
-        self._container_name = "hive-log-collector"
-        self._network_name = "hive-net"
-        self._image_name = "hive-log-collector"
-        self._log_collector_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "log_collector")
+        self.network_name = "hive-net"
+        self.container_name = "hive-log-collector"
+        self.image_name = "hive-log-collector"
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # <-- only one ..
+        self.dockerfile_dir = os.path.join(self.project_root, "log_collector")
+        self.alias = "hive-log-collector"
 
-    def __del__(self):
-        try:
-            PodmanClientSingleton.shutdown()
-        except Exception as e:
-            print(f"[✗] Error during cleanup: {e}")
+    def _run_command(self, cmd_list):
+        print(f"Running command: {' '.join(cmd_list)}")
+        subprocess.run(cmd_list, check=True)
 
-    def create_log_collector(self): 
-        try:
-            # First build the image if it doesn't exist
-            if not self._build_log_collector_image():
-                print("[✗] Failed to build log collector image.")
-                return False
-                
-            if self._client.containers.exists(self._container_name):
-                print("[✓] Container already exists!")
-                return True
-            else:
-                container = self._client.containers.create(
-                    image=self._image_name,
-                    name=self._container_name,
-                    hostname=self._container_name,
-                    networks={self._network_name: {"aliases": [self._container_name]}},
-                    network_mode="bridge",
-                    detach=True,
-                    labels={
-                        "owner": "hive",
-                        "hive.type": self._container_name
-                    },
-                    restart_policy={"Name": "always"},
-                    privileged=False,
-                    security_opt=["no-new-privileges"]
-                )
-                container.start()
-                print("[✓] Container started successfully")
-                return True
-        except Exception as e:
-            print(f"[✗] Error creating log collector container: {e}")
-            return False
+    def ensure_network_exists(self):
+        result = subprocess.run(["podman", "network", "exists", self.network_name], capture_output=True)
+        if result.returncode != 0:
+            self._run_command(["podman", "network", "create", self.network_name])
+        else:
+            print(f"[✓] Network '{self.network_name}' already exists.")
 
-    def stop_log_collector(self):
-        try:
-            if self._client.containers.exists(self._container_name):
-                container = self._client.containers.get(self._container_name)
-                container.stop()
-                print("Log collector stopped successfully")
-                container.remove(force=True)
-                print("Container removed successfully")
-                return True
-            else:
-                print("Container does not exist!")
-                return False
-        except Exception as e:
-            print("Error stopping log collector", e)
-            return False
+    def build_image(self):
+        result = subprocess.run(["podman", "image", "exists", self.image_name], capture_output=True)
+        if result.returncode != 0:
+            print(f"[~] Building image '{self.image_name}'...")
+            
+            # Change working directory to dockerfile directory
+            current_dir = os.getcwd()
+            try:
+                os.chdir(self.dockerfile_dir)
+                self._run_command([
+                    "podman", "build",
+                    "-t", self.image_name,
+                    "-f", "Dockerfile.subscriber",
+                    "."
+                ])
+                print(f"[✓] Built image '{self.image_name}'.")
+            finally:
+                # Always return back to the original directory
+                os.chdir(current_dir)
+        else:
+            print(f"[✓] Image '{self.image_name}' already exists.")
 
-    def reboot_log_collector(self):
-        try:
-            if self._client.containers.exists(self._container_name):
-                container = self._client.containers.get(self._container_name)
-                container.restart()
-                print("Log collector rebooted successfully")
-                return True
-            else:
-                print("Container does not exist!")
-                return False
-        except Exception as e:
-            print("Error rebooting log collector", e)
-            return False
 
-    def _build_log_collector_image(self):
-        try:
-            if self._client.images.exists(self._image_name):
-                print("[✓] Image already exists!")
-                return True
-            else:
-                print(f"[~] Building image from {self._log_collector_dir}")
-                try:
-                    self._client.images.build(
-                        path=self._log_collector_dir,
-                        dockerfile="Dockerfile.subscriber",
-                        tag=self._image_name,
-                        rm=True
-                    )
-                    print(f"[✓] Successfully built image: {self._image_name}")
-                    return True
-                except Exception as e:
-                    print(f"[✗] Error building the image: {e}")
-                    return False
-        except Exception as e:
-            print(f"[✗] Error in the overall builder: {e}")
-            return False
-        
-    def get_log_collector_status(self):
-        '''
-        Returns the status of the log collector container.
-        '''
-        try:
-            container = self._client.containers.get(self._container_name)
-            if container.status == "running":
-                return {"status": "running", "name": self._container_name}
-            else:
-                return {"status": "stopped", "name": self._container_name}
-        except Exception as e:
-            print("Error getting log collector status", e)
-            return {"status": "not found", "name": self._container_name}
+    def create_container(self):
+        self.ensure_network_exists()
+        self.build_image()
 
+        result = subprocess.run(["podman", "container", "exists", self.container_name], capture_output=True)
+        if result.returncode == 0:
+            print(f"[✓] Container '{self.container_name}' already exists.")
+            return
+
+        self._run_command([
+            "podman", "create",
+            "--name", self.container_name,
+            "--hostname", self.container_name,
+            "--network", "bridge",
+            "--env", "NATS_URL=nats://hive-nats-server:4222",
+            "--label", f"owner=hive",
+            "--label", f"hive.type={self.container_name}",
+            "--restart", "always",
+            "--security-opt", "no-new-privileges",
+            self.image_name
+        ])
+
+        self._run_command([
+            "podman", "network", "connect",
+            "--alias", self.alias,
+            self.network_name,
+            self.container_name
+        ])
+        print(f"[✓] Container '{self.container_name}' created and connected to network '{self.network_name}'.")
+
+    def start_container(self):
+        self._run_command(["podman", "start", self.container_name])
+
+    def stop_container(self):
+        self._run_command(["podman", "stop", self.container_name])
+
+    def delete_container(self):
+        self._run_command(["podman", "rm", "-f", self.container_name])
+
+    def get_status(self):
+        try:
+            result = subprocess.run(
+                ["podman", "inspect", "-f", "{{.State.Status}}", self.container_name],
+                capture_output=True, text=True, check=True
+            )
+            status = result.stdout.strip()
+            print(f"[INFO] {self.container_name} is {status}")
+            return status
+        except subprocess.CalledProcessError:
+            print(f"[INFO] {self.container_name} not found.")
+            return "not found"
 
 if __name__ == "__main__":
-    lc = Log_Collector()
-    lc.stop_log_collector()
-    time.sleep(5)
-    lc.create_log_collector()
-    time.sleep(15)
-    lc.reboot_log_collector()
-    time.sleep(5)
-    lc.stop_log_collector()
+    log_collector = Log_Collector_Subprocess()
+    log_collector.create_container()
+    log_collector.start_container()
+    log_collector.get_status()
