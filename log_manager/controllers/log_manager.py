@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+import time
 from typing import Dict, Any
 
 from models.OpenSearch_Manager import OpenSearchManager
@@ -23,6 +24,7 @@ opensearch_manager = OpenSearchManager()
 nats_manager = NATS_Server_Subprocess()
 log_collector_manager = Log_Collector_Subprocess()
 
+# ...existing code...
 @router.post("/create-services")
 async def create_services(request: CreateServicesRequest) -> Dict[str, str]:
     """
@@ -37,23 +39,36 @@ async def create_services(request: CreateServicesRequest) -> Dict[str, str]:
     Raises:
         HTTPException: If service creation fails
     """
-    # Check if containers already exist
-    # status_results = []
     # try:
-    #     status_results.append(opensearch_manager.get_status(silent=True))
-    #     status_results.append(nats_manager.get_status(silent=True))
-    #     status_results.append(log_collector_manager.get_status(silent=True))
-    # except Exception:
-    #     pass  # If error, assume containers don't exist
-
-    # if all(status_results):
-    #     raise HTTPException(status_code=400, detail="Services already exist. Aborting creation.")
+    #     opensearch_exists = opensearch_manager.get_status()
+    #     nats_exists = nats_manager.get_status()
+    #     log_collector_exists = log_collector_manager.get_status()
+        
+    #     if opensearch_exists or nats_exists or log_collector_exists:
+    #         existing_services = []
+    #         if opensearch_exists:
+    #             existing_services.append("OpenSearch")
+    #         if nats_exists:
+    #             existing_services.append("NATS Server")
+    #         if log_collector_exists:
+    #             existing_services.append("Log Collector")
+                
+    #         existing_services_str = ", ".join(existing_services)
+    #         raise HTTPException(
+    #             status_code=400, 
+    #             detail=f"Cannot create services. One or more containers already exist: {existing_services_str}. Please delete existing services first."
+    #         )
+    # except HTTPException:
+    #     raise
+    # except Exception as e:
+    #     # If error occurs during status check, log it but continue with container creation
+    #     print(f"Warning: Error checking service status: {str(e)}")
 
     try:
         opensearch_manager.create_opensearch_container(admin_password=request.admin_password)
         opensearch_manager.create_dashboard_container()
         nats_manager.create_container()
-        log_collector_manager.create_container()
+        log_collector_manager.create_container(admin_password=request.admin_password)
         return {"message": "All services created successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Service creation failed: {str(e)}")
@@ -72,6 +87,7 @@ async def start_services() -> Dict[str, str]:
     try:
         opensearch_manager.start_services()
         nats_manager.start_container()
+        time.sleep(5)
         log_collector_manager.start_container()
         return {"message": "All services started successfully."}
     except Exception as e:
