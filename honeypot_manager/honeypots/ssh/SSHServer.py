@@ -24,6 +24,9 @@ logging.basicConfig(
 logger = logging.getLogger('ssh_honeypot')
 
 class SSHServer(paramiko.ServerInterface):
+    # Exit command keywords to filter out
+    EXIT_COMMANDS = ['exit', 'quit', 'logout']
+    
     def __init__(self, config: Dict[str, Any]):
         self.event = threading.Event()
         self.allowed_users = config.get('authentication', {}).get('allowed_users', [])
@@ -108,18 +111,34 @@ class SSHServer(paramiko.ServerInterface):
 
         finally:
             if self.authenticated:
+                # Filter out exit commands before sending log
+                filtered_commands = self._filter_exit_commands(self.executed_commands)
+                
                 session_end = datetime.datetime.now()
                 log_data = {
                     "ip": self.client_ip,
                     "port": self.client_port,
+                    "honeypot_type": "ssh",  # Hardcoded as per requirements
                     "user_agent": self.user_agent,
                     "username": self.username,
                     "password": self.password,
-                    "entered_time": self.session_start.strftime("%Y-%m-%d %H:%M:%S"),
-                    "exited_time": session_end.strftime("%Y-%m-%d %H:%M:%S"),
-                    "commands": self.executed_commands
+                    "entered_time": self.session_start.isoformat(),
+                    "exited_time": session_end.isoformat(),
+                    "commands": filtered_commands
                 }
                 asyncio.run(self._send_log_to_nats(log_data))
+    
+    def _filter_exit_commands(self, commands: list) -> list:
+        """
+        Filter out exit commands from the executed commands list
+        
+        Args:
+            commands: List of commands to filter
+            
+        Returns:
+            List of commands with exit commands removed
+        """
+        return [cmd for cmd in commands if not any(exit_cmd in cmd.lower() for exit_cmd in self.EXIT_COMMANDS)]
 
     def _handle_session(self, chan):
         buffer = ""
@@ -140,7 +159,7 @@ class SSHServer(paramiko.ServerInterface):
                     if self.authenticated:
                         self.executed_commands.append(command)
 
-                    if command.lower() in ('exit', 'quit', 'logout'):
+                    if command.lower() in self.EXIT_COMMANDS:
                         chan.send("Goodbye.\r\n")
                         chan.close()
                         break

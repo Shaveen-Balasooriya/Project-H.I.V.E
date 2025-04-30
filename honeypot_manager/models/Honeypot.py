@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Honeypot container orchestration via **Podman CLI**.
+"""Honeypot container orchestration via **Podman CLI**.
 This is the *authoritative* implementation used by the controller.
 Safety additions:
 • Cannot **delete** while container status == *running*.
@@ -89,6 +89,11 @@ class HoneypotManager:
     """Manage a *single* honeypot container via Podman CLI."""
 
     BASE_DIR = Path(__file__).resolve().parent.parent
+    
+    # Hard-coded NATS configuration values
+    NATS_URL = "nats://hive-nats-server:4222"
+    NATS_STREAM = "honeypot"
+    NATS_SUBJECT = "honeypot.logs"
 
     def __init__(self):
         self.runner = PodmanRunner()
@@ -145,6 +150,14 @@ class HoneypotManager:
         ports_cli = self._compose_port_args(cfg)
         vols_cli = self._compose_volume_args(cfg, honeypot_dir)
 
+        # Environment variables for the container - using hard-coded values
+        env_vars = [
+            "-e", f"NATS_URL={self.NATS_URL}",
+            "-e", f"NATS_STREAM={self.NATS_STREAM}",
+            "-e", f"NATS_SUBJECT={self.NATS_SUBJECT}",
+            "-e", f"HONEYPOT_TYPE={honeypot_type}"
+        ]
+
         create_cmd = [
             "podman",
             "create",
@@ -172,8 +185,7 @@ class HoneypotManager:
             honeypot_memory_swap_limit,
             "--security-opt",
             "no-new-privileges",
-            "-e",
-            "NATS_URL=nats://hive-nats-server:4222",
+            *env_vars,
             *ports_cli,
             *vols_cli,
             self.honeypot_image,

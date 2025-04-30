@@ -60,6 +60,15 @@ def main() -> None:
     logger.info(" SSH HONEYPOT SERVER STARTING ".center(48, "="))
     logger.info("=" * 50)
     
+    # Log NATS configuration 
+    nats_url = os.getenv("NATS_URL", "nats://hive-nats-server:4222")
+    nats_stream = os.getenv("NATS_STREAM", "honeypot")
+    nats_subject = os.getenv("NATS_SUBJECT", "honeypot.logs")
+    honeypot_type = os.getenv("HONEYPOT_TYPE", "ssh")
+    
+    logger.info(f"NATS Configuration: URL={nats_url}, Stream={nats_stream}, Subject={nats_subject}")
+    logger.info(f"Honeypot type: {honeypot_type}")
+    
     ip_address = "0.0.0.0"
     port = 22
 
@@ -126,5 +135,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    logger.info("Checking if the changes got through. New changes are being made.=+++ASD+SAD+SA+DAS+DAS+DASD")
     main()

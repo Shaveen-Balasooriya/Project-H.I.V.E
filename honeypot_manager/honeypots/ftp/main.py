@@ -19,7 +19,7 @@ def create_dummy_files(directory):
     dummy_files = [
         {
             "name": "backup.zip",
-            "content": "PK\x03\x04\x14\x00\x00\x00\x08\x00\xFDCEVeO\x7F\x93\x12\x00\x00\x00\x1A\x00\x00\x00\x0C\x00\x00\x00passwords.txt",
+            "content": b"PK\x03\x04\x14\x00\x00\x00\x08\x00\xFDCEVeO\x7F\x93\x12\x00\x00\x00\x1A\x00\x00\x00\x0C\x00\x00\x00passwords.txt",
             "type": "binary"
         },
         {
@@ -47,7 +47,7 @@ def create_dummy_files(directory):
         },
         {
             "name": "users.db",
-            "content": "SQLite format 3" + "\x00" * 20 + "CREATE TABLE users(id INTEGER PRIMARY KEY, username TEXT, password TEXT, email TEXT)",
+            "content": b"SQLite format 3" + b"\x00" * 20 + b"CREATE TABLE users(id INTEGER PRIMARY KEY, username TEXT, password TEXT, email TEXT)",
             "type": "binary"
         }
     ]
@@ -64,7 +64,13 @@ def create_dummy_files(directory):
         mode = "wb" if file_info["type"] == "binary" else "w"
         
         with open(file_path, mode) as f:
-            f.write(file_info["content"])
+            # Make sure binary content is bytes and text content is str
+            if mode == "wb" and isinstance(file_info["content"], str):
+                f.write(file_info["content"].encode('utf-8'))
+            elif mode == "w" and isinstance(file_info["content"], bytes):
+                f.write(file_info["content"].decode('utf-8', errors='replace'))
+            else:
+                f.write(file_info["content"])
         
         # Set realistic timestamps
         past_time = datetime.datetime.now() - datetime.timedelta(days=random.randint(30, 180))
