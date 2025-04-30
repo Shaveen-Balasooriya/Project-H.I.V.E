@@ -6,6 +6,9 @@ import time
 import datetime
 import shutil
 import logging
+import asyncio
+from typing import Dict, Any
+from NATSJetstreamPublisher import NATSJetstreamPublisher
 
 # Setup logging
 LOG_DIR = os.path.abspath('./logs')
@@ -51,19 +54,21 @@ class FTPServer(FTPHandler):
         self.password = None
         self.session_start = None
         self.session_id = None
+        self.commands_executed = []
+        self.authenticated = False
         FTPHandler.__init__(self, *args, **kwargs)
         
     def on_connect(self):
         """Log when a client connects to the server"""
         self.client_ip = self.remote_ip
         self.client_port = self.remote_port
-        self.session_start = time.time()
-        self.session_id = f"{self.client_ip}:{self.client_port}-{int(self.session_start)}"
+        self.session_start = datetime.datetime.now()
+        self.session_id = f"{self.client_ip}:{self.client_port}-{int(self.session_start.timestamp())}"
         
         logger.info(f"New connection established")
         logger.info(f"Client IP: {self.client_ip}")
         logger.info(f"Client Port: {self.client_port}")
-        logger.info(f"Session Started: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"Session Started: {self.session_start.strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info(f"Session ID: {self.session_id}")
         
         # Get client machine info from FTP client banner if available
@@ -76,14 +81,21 @@ class FTPServer(FTPHandler):
     def on_disconnect(self):
         """Log when a client disconnects from the server"""
         if hasattr(self, 'session_start') and self.session_start:
-            session_duration = time.time() - self.session_start
+            session_end = datetime.datetime.now()
+            session_duration = session_end.timestamp() - self.session_start.timestamp()
             logger.info(f"Client disconnected: {self.client_ip}:{self.client_port}")
             logger.info(f"Session Duration: {session_duration:.2f} seconds")
-            logger.info(f"Session Ended: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(f"Session Ended: {session_end.strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            # If the user authenticated, send the session data to NATS
+            if self.authenticated:
+                self._send_log_to_nats(session_end)
+                
         super().on_disconnect()
         
     def on_login(self, username):
         """Log successful logins to the server"""
+        self.authenticated = True
         logger.info(f"Successfully authenticated")
         logger.info(f"Username: {self.username}")
         logger.info(f"Password: {self.password}")
@@ -92,6 +104,8 @@ class FTPServer(FTPHandler):
         
     def on_login_failed(self, username, password):
         """Log failed login attempts"""
+        self.username = username
+        self.password = password
         logger.info(f"Failed login attempt")
         logger.info(f"Username: {username}")
         logger.info(f"Password: {password}")
@@ -103,6 +117,10 @@ class FTPServer(FTPHandler):
         logger.info(f"File downloaded: {os.path.basename(file)}")
         logger.info(f"By: {self.username} from {self.client_ip}:{self.client_port}")
         logger.info(f"Full path: {file}")
+        
+        # Add this command to the executed_commands list
+        self.commands_executed.append(f"DOWNLOAD {os.path.basename(file)}")
+        
         super().on_file_sent(file)
 
     def on_file_received(self, file):
@@ -110,6 +128,10 @@ class FTPServer(FTPHandler):
         logger.info(f"File uploaded: {os.path.basename(file)}")
         logger.info(f"By: {self.username} from {self.client_ip}:{self.client_port}")
         logger.info(f"Full path: {file}")
+        
+        # Add this command to the executed_commands list
+        self.commands_executed.append(f"UPLOAD {os.path.basename(file)}")
+        
         try:
             # Make sure the malware directory exists
             if not os.path.exists(MALWARE_DIR):
@@ -162,6 +184,10 @@ class FTPServer(FTPHandler):
         """Log directory listings"""
         logger.info(f"Directory listed: {path}")
         logger.info(f"By: {self.username} from {self.client_ip}:{self.client_port}")
+        
+        # Add this command to the executed_commands list
+        self.commands_executed.append(f"LIST {path}")
+        
         super().on_directory_listed(path)
         
     def _get_client_info(self):
@@ -176,4 +202,45 @@ class FTPServer(FTPHandler):
         if args:
             logger.info(f"Args: {' '.join(args)}")
         logger.info(f"From: {self.client_ip}:{self.client_port}")
+        
+        # Track commands for the NATS log
+        if cmd not in ['PASS', 'FEAT', 'OPTS', 'PWD', 'TYPE', 'SYST', 'PORT', 'PASV', 'EPSV']:
+            # Skip some common FTP protocol commands to keep the logs cleaner
+            command_str = f"{cmd}"
+            if args and cmd not in ['PASS']:  # Don't log password arguments
+                command_str += f" {' '.join(args)}"
+            self.commands_executed.append(command_str)
+            
         return super().process_command(cmd, *args, **kwargs)
+        
+    def _send_log_to_nats(self, session_end: datetime.datetime):
+        """Send session data to NATS"""
+        try:
+            # Filter out exit commands
+            filtered_commands = [cmd for cmd in self.commands_executed if not cmd.startswith(('QUIT', 'EXIT'))]
+            
+            # Prepare log data
+            log_data = {
+                "honeypot_type": "ftp",
+                "attacker_ip": self.client_ip, 
+                "attacker_port": self.client_port,
+                "username": self.username,
+                "password": self.password,
+                "time_of_entry": self.session_start.isoformat() + "Z",
+                "time_of_exit": session_end.isoformat() + "Z",
+                "commands_executed": filtered_commands,
+                "user-agent": ""  # FTP doesn't have user-agent
+            }
+            
+            # Create async task to send to NATS
+            asyncio.run(self._async_send_to_nats(log_data))
+            logger.info(f"Session log for {self.session_id} sent to NATS")
+        except Exception as e:
+            logger.error(f"Failed to send log to NATS: {e}")
+    
+    async def _async_send_to_nats(self, log_data: Dict[str, Any]):
+        """Async function to send data to NATS"""
+        publisher = NATSJetstreamPublisher()
+        await publisher.connect()
+        await publisher.publish(log_data)
+        await publisher.close()

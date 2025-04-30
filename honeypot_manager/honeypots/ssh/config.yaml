@@ -1,11 +1,6 @@
-# config.yaml
 authentication:
   allowed_users:
-    - username: "root"
-      password: "toor"
-    - username: "admin"
-      password: "admin123"
-
-ssh:
-  banner: "SSH-2.0-OpenSSH_8.2p1"
-  key_path: "ssh_host_rsa_key"
+  - username: string
+    password: string
+banner: string
+ssh_key_path: ssh_host_rsa_key

@@ -19,7 +19,7 @@ def create_dummy_files(directory):
     dummy_files = [
         {
             "name": "backup.zip",
-            "content": "PK\x03\x04\x14\x00\x00\x00\x08\x00\xFDCEVeO\x7F\x93\x12\x00\x00\x00\x1A\x00\x00\x00\x0C\x00\x00\x00passwords.txt",
+            "content": b"PK\x03\x04\x14\x00\x00\x00\x08\x00\xFDCEVeO\x7F\x93\x12\x00\x00\x00\x1A\x00\x00\x00\x0C\x00\x00\x00passwords.txt",
             "type": "binary"
         },
         {
@@ -47,7 +47,7 @@ def create_dummy_files(directory):
         },
         {
             "name": "users.db",
-            "content": "SQLite format 3" + "\x00" * 20 + "CREATE TABLE users(id INTEGER PRIMARY KEY, username TEXT, password TEXT, email TEXT)",
+            "content": b"SQLite format 3" + b"\x00" * 20 + b"CREATE TABLE users(id INTEGER PRIMARY KEY, username TEXT, password TEXT, email TEXT)",
             "type": "binary"
         }
     ]
@@ -64,7 +64,13 @@ def create_dummy_files(directory):
         mode = "wb" if file_info["type"] == "binary" else "w"
         
         with open(file_path, mode) as f:
-            f.write(file_info["content"])
+            # Make sure binary content is bytes and text content is str
+            if mode == "wb" and isinstance(file_info["content"], str):
+                f.write(file_info["content"].encode('utf-8'))
+            elif mode == "w" and isinstance(file_info["content"], bytes):
+                f.write(file_info["content"].decode('utf-8', errors='replace'))
+            else:
+                f.write(file_info["content"])
         
         # Set realistic timestamps
         past_time = datetime.datetime.now() - datetime.timedelta(days=random.randint(30, 180))
@@ -87,7 +93,8 @@ def load_config():
         # Provide default minimal config if file not found
         return {
             'authentication': {'allowed_users': [{'username': 'guest', 'password': 'guest'}]},
-            'ftp': {'banner': '220 FTP Server Ready', 'max_connections': 10}
+            'banner': '220 FTP Server Ready',
+            'ftp': {'max_connections': 10}
         }
     except yaml.YAMLError as e:
         logger.error(f"Error parsing configuration file {CONFIG_FILE}: {e}")
@@ -136,6 +143,13 @@ def main():
     logger.info(" FTP HONEYPOT SERVER STARTING ".center(48, "="))
     logger.info("=" * 50)
 
+    # Log NATS configuration 
+    nats_url = os.getenv("NATS_URL")
+    nats_stream = os.getenv("NATS_STREAM")
+    nats_subject = os.getenv("NATS_SUBJECT")
+    logger.info(f"NATS Configuration: URL={nats_url}, Stream={nats_stream}, Subject={nats_subject}")
+    logger.info(f"Honeypot type: ftp")
+
     # Load configuration
     config = load_config()
 
@@ -146,14 +160,14 @@ def main():
     handler = FTPServer
     handler.authorizer = authorizer
     # Use banner from config, with a simple default
-    handler.banner = config.get('ftp', {}).get('banner', '220 FTP Server Ready')
+    handler.banner = config.get('banner', '220 FTP Server Ready')
     # Using the shared constants for passive port range
     handler.passive_ports = range(PASSIVE_PORT_START, PASSIVE_PORT_END + 1)
 
-    # Set up throttled data transfers (using fixed values as per simplified version)
+    # Set up throttled data transfers
     dtp_handler = ThrottledDTPHandler
-    dtp_handler.read_limit = 32768  # Simple fixed limit
-    dtp_handler.write_limit = 32768 # Simple fixed limit
+    dtp_handler.read_limit = config.get('ftp', {}).get('connection_limit', 32768)
+    dtp_handler.write_limit = config.get('ftp', {}).get('connection_limit', 32768)
     handler.dtp_handler = dtp_handler
 
     # Create and configure the server with simple settings from config or defaults
@@ -173,7 +187,7 @@ def main():
         logger.info(f"Listening on {server_address}:{server_port}")
         logger.info(f"Maximum connections: {server.max_cons}")
         logger.info(f"Max connections per IP: {server.max_cons_per_ip}")
-        logger.info(f"Connection speed limit: {dtp_handler.read_limit / 1024:.1f} KB/s (fixed)")
+        logger.info(f"Connection speed limit: {dtp_handler.read_limit / 1024:.1f} KB/s")
         logger.info(f"Passive port range: {PASSIVE_PORT_START}-{PASSIVE_PORT_END}")
         logger.info(f"Bait directory: ./public")
         logger.info("Waiting for connections...")

@@ -14,9 +14,9 @@ class NATSJetstreamPublisher:
         self.initialized = False
 
         # Configurations (ENV overrides for easy portability)
-        self.server_url = os.getenv("NATS_URL")
-        self.stream_name = os.getenv("NATS_STREAM")
-        self.subject_name = os.getenv("NATS_SUBJECT")
+        self.server_url = os.getenv("NATS_URL", "nats://hive-nats-server:4222")
+        self.stream_name = os.getenv("NATS_STREAM", "honeypot")
+        self.subject_name = os.getenv("NATS_SUBJECT", "honeypot.logs")
 
 
     async def connect(self):
@@ -85,8 +85,8 @@ class NATSJetstreamPublisher:
             formatted["attacker_port"] = payload.get("attacker_port", 0)
             
         if "honeypot_type" not in payload:
-            # Get honeypot type from environment or use "ssh" as default
-            formatted["honeypot_type"] = os.getenv("HONEYPOT_TYPE", "ssh")
+            # Get honeypot type from environment or use "http" as default
+            formatted["honeypot_type"] = os.getenv("HONEYPOT_TYPE", "http")
         else:
             formatted["honeypot_type"] = payload["honeypot_type"]
             
