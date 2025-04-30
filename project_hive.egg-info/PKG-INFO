@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: project-hive
+Version: 0.0.1
+Requires-Dist: fastapi>=0.110
+Requires-Dist: uvicorn[standard]>=0.29

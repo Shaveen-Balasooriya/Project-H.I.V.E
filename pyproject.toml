@@ -1,0 +1,13 @@
+[project]
+name = "project-hive"
+version = "0.0.1"
+dependencies = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# --- tell setuptools what to ship ---------------------------
+[tool.setuptools]
+packages = ["common", "log_manager", "honeypot_manager"]
+# ─────────────────────────────────────────────────────────────
