@@ -113,12 +113,35 @@ class Honeypot:
     def get_available_honeypot_types() -> List[str]:
         """Return list of available honeypot types from configuration"""
         return HoneypotConfig.get_available_types()
+        
+    def _ensure_network_exists(self) -> bool:
+        """Ensure the hive-net network exists, creating it if necessary"""
+        try:
+            client = self.get_client()
+            networks = client.networks.list()
+            network_exists = any(network.name == self._network_name for network in networks)
+            
+            if not network_exists:
+                logger.info(f"Creating network '{self._network_name}'")
+                client.networks.create(name=self._network_name)
+                logger.info(f"Network '{self._network_name}' created successfully")
+            else:
+                logger.debug(f"Network '{self._network_name}' already exists")
+                
+            return True
+        except Exception as e:
+            logger.error(f"Error ensuring network exists: {e}")
+            return False
 
     def create_honeypot(self, honeypot_type: str, honeypot_port: int, honeypot_cpu_limit: int = 100000,
                  honeypot_cpu_quota: int = 50000, honeypot_memory_limit: str = '512m',
                  honeypot_memory_swap_limit: str = '512m') -> bool:
         """Create a new honeypot"""
         try:
+            # Ensure network exists first
+            if not self._ensure_network_exists():
+                raise HoneypotError("Failed to ensure network exists")
+                
             # Validate the honeypot type exists in configuration
             if not HoneypotConfig.type_exists(honeypot_type):
                 raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_type}' not found in configuration")
@@ -271,7 +294,7 @@ class Honeypot:
             
             # Get dynamic volume mapping based on honeypot type
             volumes = self._get_volume_mapping(honeypot_config_path)
-            
+                            
             # Create the container
             container = self.get_client().containers.create(
                 image=_image,
@@ -286,14 +309,14 @@ class Honeypot:
                 volumes=volumes,
                 hostname=self.honeypot_name,
                 networks={self._network_name: {"aliases": [self.honeypot_name]}},
-                network_mode="bridge",
+                # Use the private network instead of bridge mode
                 cpu_period=honeypot_cpu_limit,
                 cpu_quota=honeypot_cpu_quota,
                 mem_limit=honeypot_memory_limit,
                 memswap_limit=honeypot_memory_swap_limit,
                 security_opt=['no-new-privileges'],
                 environment={
-                    'NATS_URL': 'nats://hive-nats-server:4222'
+                    'NATS_URL': 'nats://hive-nats-server:4222'  # Using DNS hostname resolution
                 },
                 restart_policy={'Name': 'always'}
             )
