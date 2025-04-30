@@ -5,6 +5,8 @@ import json
 import re
 from typing import List, Dict, Any
 import subprocess
+import yaml
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -29,7 +31,7 @@ router = APIRouter(prefix="/honeypot-manager", tags=["honeypot-manager"])
 ###############################################################################
 # Base error mappings
 _ERROR_MAP: Dict[type, tuple[str, int]] = {
-    HoneypotExistsError: ("Honeypot already exists", status.HTTP_409_CONFLICT),
+    HoneypotExistsError: ("Honeypot already exists with this name and port", status.HTTP_409_CONFLICT),
     HoneypotImageError: ("Failed to build / pull honeypot image", 500),
     HoneypotContainerError: ("Container operation failed", 500),  # Default fallback
     HoneypotPrivilegedPortError: (
@@ -55,6 +57,11 @@ _ERROR_PATTERNS = [
     (
         r'creating container storage: the container name "([^"]+)" is already in use', 
         r'Honeypot \1 already exists'
+    ),
+    # Pattern for "already exists" from honeypot creation
+    (
+        r'Honeypot ([^ ]+) already exists by ([a-f0-9]+)',
+        r'Honeypot \1 already exists. Please use a different port for this honeypot type.'
     ),
     # Pattern for permission errors
     (
@@ -85,6 +92,17 @@ def _simplify_error_message(message: str) -> str:
         if match:
             return re.sub(pattern, replacement, message, flags=re.IGNORECASE)
     
+    # Special handling for honeypot name already exists errors
+    if "that name is already in use" in message or "already exists" in message:
+        # Try to extract the honeypot name
+        match = re.search(r'--name ([^ ]+)', message)
+        if match:
+            honeypot_name = match.group(1)
+            honeypot_type = honeypot_name.split('-')[1] if len(honeypot_name.split('-')) > 2 else "unknown"
+            honeypot_port = honeypot_name.split('-')[2] if len(honeypot_name.split('-')) > 2 else "unknown"
+            return f"A honeypot of type '{honeypot_type}' with port {honeypot_port} already exists. Please use a different port."
+        return "A honeypot with this name already exists. Please use a different port."
+    
     # If no specific pattern matches, handle long error messages
     if len(message) > 100:
         # Find the most relevant part of the message
@@ -104,7 +122,23 @@ def _err(exc: Exception):  # noqa: D401 – small helper
     else:
         message = str(exc)
     
-    # Simplify error message
+    # Special handling for HoneypotExistsError to create a more user-friendly error
+    if isinstance(exc, HoneypotExistsError):
+        honeypot_name = str(exc)
+        parts = honeypot_name.split('-')
+        if len(parts) >= 3:
+            honeypot_type = parts[1]
+            port = parts[2]
+            message = f"A honeypot of type '{honeypot_type}' using port {port} already exists. Please use a different port."
+        else:
+            message = f"Honeypot '{honeypot_name}' already exists. Please use a different name or port."
+        
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=message
+        )
+    
+    # Simplify error message for other types
     message = _simplify_error_message(message)
         
     # Get default error code for this exception type
@@ -167,7 +201,20 @@ async def inspect(name: str):
 async def create(body: HoneypotCreate):
     hp = Honeypot()
     try:
-        hp.create_honeypot(**body.model_dump())
+        # Use model_dump() to convert the Pydantic model to a dict
+        honeypot_data = body.model_dump()
+        
+        # Extract authentication and banner for config update
+        authentication = honeypot_data.pop('authentication', None)
+        banner = honeypot_data.pop('banner', None)
+        
+        # No need to convert authentication again as it's already a dict after model_dump()
+        
+        # Add authentication and banner back to the parameters for create_honeypot
+        honeypot_data['authentication'] = authentication
+        honeypot_data['banner'] = banner
+        
+        hp.create_honeypot(**honeypot_data)
         hp.get_honeypot_details(hp.honeypot_name)
         return HoneypotResponse(**hp.to_dict())
     except Exception as exc:
@@ -238,6 +285,59 @@ async def types():
 async def type_cfg(honeypot_type: str):
     try:
         return HoneypotConfig.get(honeypot_type)
+    except Exception as exc:
+        _err(exc)
+
+###############################################################################
+# Honeypot Authentication Details
+###############################################################################
+@router.get("/types/{honeypot_type}/auth-details")
+async def get_honeypot_auth_details(honeypot_type: str):
+    """Retrieve authentication details and banner from a honeypot's config file."""
+    try:
+        # Check if honeypot type exists
+        if not HoneypotConfig.exists(honeypot_type):
+            _err(HoneypotTypeNotFoundError(f"Unknown honeypot type: {honeypot_type}"))
+        
+        # Get the config file path
+        config_path = Path(Honeypot.BASE_DIR) / "honeypots" / honeypot_type / "config.yaml"
+        
+        if not config_path.exists():
+            _err(HTTPException(
+                status_code=404, 
+                detail=f"Config file for honeypot type '{honeypot_type}' not found"
+            ))
+        
+        # Load the YAML file
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+        except yaml.YAMLError:
+            _err(HTTPException(
+                status_code=500, 
+                detail=f"Error parsing config file for honeypot type '{honeypot_type}'"
+            ))
+        
+        # Extract authentication details and banner
+        response_data = {}
+        
+        # Add authentication if available
+        if 'authentication' in config:
+            response_data['authentication'] = config['authentication']
+            
+        # Add banner if available
+        if 'banner' in config:
+            response_data['banner'] = config['banner']
+            
+        # Return empty object if no relevant data found
+        if not response_data:
+            _err(HTTPException(
+                status_code=404,
+                detail=f"No authentication details or banner found for honeypot type '{honeypot_type}'"
+            ))
+            
+        return response_data
+            
     except Exception as exc:
         _err(exc)
 

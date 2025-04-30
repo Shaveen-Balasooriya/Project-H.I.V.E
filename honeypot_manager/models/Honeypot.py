@@ -108,6 +108,81 @@ class HoneypotManager:
         self.honeypot_type: Optional[str] = None
         self.honeypot_image: Optional[str] = None
 
+    def update_honeypot_config(self, honeypot_type: str, authentication: Optional[Dict[str, Any]] = None, 
+                              banner: Optional[str] = None) -> bool:
+        """Update the config.yaml file for the specified honeypot type with new authentication and banner.
+        
+        Args:
+            honeypot_type: The type of honeypot (e.g., 'ssh', 'ftp')
+            authentication: Dictionary containing authentication details with allowed_users
+            banner: String with the banner text
+        
+        Returns:
+            bool: True if update was successful
+            
+        Raises:
+            FileNotFoundError: If the config file doesn't exist
+            yaml.YAMLError: If there's an error parsing the YAML file
+        """
+        config_path = self.BASE_DIR / "honeypots" / honeypot_type / "config.yaml"
+        
+        if not config_path.exists():
+            logger.error(f"Config file for {honeypot_type} not found at {config_path}")
+            raise FileNotFoundError(f"Config file for {honeypot_type} not found")
+        
+        try:
+            # Load existing configuration
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file) or {}
+        except yaml.YAMLError as exc:
+            logger.error(f"Error parsing YAML file: {exc}")
+            raise
+        
+        # Update authentication if provided, ensuring proper format
+        if authentication:
+            # Make sure authentication has proper structure
+            if 'allowed_users' not in authentication:
+                # If authentication was passed without the allowed_users key, wrap it
+                config['authentication'] = {'allowed_users': []}
+                
+                # Check if the passed data is already a list of users
+                if isinstance(authentication, list):
+                    config['authentication']['allowed_users'] = authentication
+                else:
+                    # If it's properly structured with allowed_users
+                    config['authentication'] = authentication
+            else:
+                # The structure is already correct
+                config['authentication'] = authentication
+                
+            # Ensure username appears before password for each user
+            # by creating a new list with properly ordered dictionaries
+            if 'allowed_users' in config['authentication']:
+                ordered_users = []
+                for user in config['authentication']['allowed_users']:
+                    # Create an ordered dictionary with username first, then password
+                    ordered_user = {}
+                    if 'username' in user:
+                        ordered_user['username'] = user['username']
+                    if 'password' in user:
+                        ordered_user['password'] = user['password']
+                    ordered_users.append(ordered_user)
+                config['authentication']['allowed_users'] = ordered_users
+            
+        # Update banner if provided
+        if banner is not None:
+            config['banner'] = banner
+            
+        try:
+            # Write updated configuration back to file with proper formatting
+            with open(config_path, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+            logger.info(f"Updated configuration for {honeypot_type} honeypot")
+            return True
+        except Exception as exc:
+            logger.error(f"Error writing updated configuration: {exc}")
+            raise
+            
     # ------------------------------------------------------------------
     # public API – creation
     # ------------------------------------------------------------------
@@ -120,6 +195,8 @@ class HoneypotManager:
         honeypot_cpu_quota: int = 50_000,
         honeypot_memory_limit: str = "512m",
         honeypot_memory_swap_limit: str = "512m",
+        authentication: Optional[Dict[str, Any]] = None,
+        banner: Optional[str] = None,
     ) -> bool:
         """Build image (if needed) & create a *stopped* container."""
         # 1) validations --------------------------------------------------
@@ -136,6 +213,13 @@ class HoneypotManager:
         honeypot_dir = self.BASE_DIR / "honeypots" / honeypot_type
         if not honeypot_dir.exists():
             raise FileNotFoundError(honeypot_dir)
+            
+        # 1.5) Update configuration if authentication or banner provided
+        if authentication or banner is not None:
+            try:
+                self.update_honeypot_config(honeypot_type, authentication, banner)
+            except Exception as exc:
+                raise HoneypotError(f"Failed to update honeypot configuration: {exc}")
 
         # 2) build image if absent ---------------------------------------
         try:
