@@ -1,333 +1,305 @@
+"""REST controller – updated with safety guards & structured responses."""
+from __future__ import annotations
+
+import json
+import re
+from typing import List, Dict, Any
+import subprocess
+
 from fastapi import APIRouter, HTTPException, status
-from typing import List, Dict
-import logging
-from podman.errors import PodmanError, APIError
-from schemas.honeypot import HoneypotCreate, HoneypotResponse
-from models.Honeypot import Honeypot, HoneypotConfig
-from util.exceptions import (
-    HoneypotError, HoneypotExistsError, HoneypotImageError, HoneypotContainerError, 
-    HoneypotPrivilegedPortError, HoneypotTypeNotFoundError
+
+from honeypot_manager.models.Honeypot import HoneypotManager as Honeypot
+from honeypot_manager.models.Honeypot import HoneypotConfig
+from honeypot_manager.schemas.honeypot import HoneypotCreate, HoneypotResponse
+from honeypot_manager.util.exceptions import (
+    HoneypotActiveConnectionsError,
+    HoneypotContainerError,
+    HoneypotExistsError,
+    HoneypotImageError,
+    HoneypotPrivilegedPortError,
+    HoneypotTypeNotFoundError,
+    HoneypotError,
 )
-from util.podman_client import get_podman_client
-import os
+from common.helpers import PodmanError, ResourceError, PodmanRunner, logger
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/honeypot-manager", tags=["honeypot-manager"])
 
-# Create router with prefix
-router = APIRouter(
-    prefix="/honeypot-manager",
-    tags=["honeypot-manager"],
-)
-
-# Error message dictionary for user-friendly messages
-ERROR_MESSAGES = {
-    HoneypotExistsError: (
-        "A honeypot already exists with this configuration", status.HTTP_409_CONFLICT),
-    HoneypotImageError: (
-        "Could not create the honeypot image. System resources might be insufficient",
-        status.HTTP_500_INTERNAL_SERVER_ERROR),
-    HoneypotContainerError: (
-        "Failed to manage the honeypot container", status.HTTP_500_INTERNAL_SERVER_ERROR),
+###############################################################################
+# Error mapping – shared helper
+###############################################################################
+# Base error mappings
+_ERROR_MAP: Dict[type, tuple[str, int]] = {
+    HoneypotExistsError: ("Honeypot already exists", status.HTTP_409_CONFLICT),
+    HoneypotImageError: ("Failed to build / pull honeypot image", 500),
+    HoneypotContainerError: ("Container operation failed", 500),  # Default fallback
     HoneypotPrivilegedPortError: (
-        "Port permission error: Ports below 1024 require root privileges or special system configuration",
-        status.HTTP_400_BAD_REQUEST),
-    HoneypotTypeNotFoundError: (
-        "Honeypot type not found. Please use one of the available types from the /honeypot-manager/types endpoint",
-        status.HTTP_404_NOT_FOUND),
-    PodmanError: (
-        "Container system error. Please try again later", status.HTTP_500_INTERNAL_SERVER_ERROR),
-    APIError: (  # Add handling for APIError specifically
-        "Container system API error. Make sure Podman system service is running",
-        status.HTTP_500_INTERNAL_SERVER_ERROR),
-    PermissionError: (
-        "Insufficient permissions to perform this operation", status.HTTP_403_FORBIDDEN),
-    FileNotFoundError: (
-        "Required files or directories not found", status.HTTP_500_INTERNAL_SERVER_ERROR),
+        "Port <1024 needs CAP_NET_BIND_SERVICE or root privileges", 400
+    ),
+    HoneypotActiveConnectionsError: (
+        "Active inbound connections detected – refuse operation", 423  # Locked
+    ),
+    HoneypotTypeNotFoundError: ("Unknown honeypot type", 404),
+    HoneypotError: ("Honeypot operation error", 500),
+    PodmanError: ("Podman runtime error", 500),
+    ResourceError: ("Host resource error", 500),
+    # Add built-in exception mappings below
+    ValueError: ("Invalid parameter", status.HTTP_400_BAD_REQUEST),
+    FileNotFoundError: ("Configuration not found", status.HTTP_404_NOT_FOUND),
+    PermissionError: ("Permission denied", status.HTTP_403_FORBIDDEN),
+    subprocess.CalledProcessError: ("System subprocess error", status.HTTP_500_INTERNAL_SERVER_ERROR),
 }
 
+# Common error patterns to simplify
+_ERROR_PATTERNS = [
+    # Pattern for "already in use" errors
+    (
+        r'creating container storage: the container name "([^"]+)" is already in use', 
+        r'Honeypot \1 already exists'
+    ),
+    # Pattern for permission errors
+    (
+        r'permission denied.*',
+        'Permission denied - check container privileges'
+    ),
+    # Pattern for "no such container"
+    (
+        r'no such container.*"([^"]+)"',
+        r'Honeypot \1 not found'
+    ),
+    # Pattern for "already running"
+    (
+        r'container ([^ ]+) is already running',
+        r'Honeypot \1 is already running'
+    ),
+    # Pattern for "not running"
+    (
+        r'container ([^ ]+) is not running',
+        r'Honeypot \1 is not running'
+    )
+]
 
-def handle_honeypot_error(e: Exception) -> HTTPException:
-    """
-    Centralized error handler to convert exceptions to user-friendly HTTP exceptions
-    """
-    error_type = type(e)
-    if error_type in ERROR_MESSAGES:
-        message, status_code = ERROR_MESSAGES[error_type]
+def _simplify_error_message(message: str) -> str:
+    """Simplify long Podman error messages to user-friendly form."""
+    for pattern, replacement in _ERROR_PATTERNS:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            return re.sub(pattern, replacement, message, flags=re.IGNORECASE)
+    
+    # If no specific pattern matches, handle long error messages
+    if len(message) > 100:
+        # Find the most relevant part of the message
+        if "Error:" in message:
+            parts = message.split("Error:", 1)
+            return "Error: " + parts[1].strip()
+    
+    return message
+
+def _err(exc: Exception):  # noqa: D401 – small helper
+    if isinstance(exc, HTTPException):
+        raise exc
         
-        # For type not found error, include more context from the exception
-        if error_type == HoneypotTypeNotFoundError:
-            # Extract the honeypot type from the error message if available
-            message = str(e) if str(e) else message
-            # Include list of available types in the error message
-            try:
-                available_types = Honeypot.get_available_honeypot_types()
-                if available_types:
-                    message = f"{message}. Available types: {', '.join(available_types)}"
-            except Exception:
-                # If we can't get available types, just use the default message
-                pass
-        # For file not found errors, include path information
-        elif error_type == FileNotFoundError:
-            message = f"File or directory not found: {str(e)}"
+    # Use specific error message if available
+    if hasattr(exc, 'msg') and exc.msg:
+        message = exc.msg
     else:
-        message = f"An unexpected error occurred: {str(e)}"
-        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        message = str(exc)
+    
+    # Simplify error message
+    message = _simplify_error_message(message)
+        
+    # Get default error code for this exception type
+    error_type = type(exc)
+    default_msg, code = _ERROR_MAP.get(error_type, (message, 500))
+    
+    # Use specific message if available, otherwise use default
+    final_message = message if message != error_type.__name__ else default_msg
+    
+    raise HTTPException(status_code=code, detail=final_message)
 
-    logger.error(f"Honeypot error: {error_type.__name__} - {str(e)}")
-    return HTTPException(status_code=status_code, detail=message)
+###############################################################################
+# helpers – discovery + response packing
+###############################################################################
+_runner = PodmanRunner()
 
 
+def _list_ids(*flt: str) -> List[str]:
+    cmd = ["podman", "ps", "-a", "--format", "json"]
+    for f in flt:
+        cmd += ["--filter", f]
+    try:
+        out = _runner.run(cmd, return_output=True) or "[]"
+    except PodmanError as exc:
+        _err(exc)
+    ids = [e["Id"] for e in json.loads(out)]
+    return ids
+
+
+def _hp_responses(ids: List[str]) -> List[HoneypotResponse]:
+    res: List[HoneypotResponse] = []
+    for cid in ids:
+        hp = Honeypot()
+        if hp.get_honeypot_details(cid):
+            res.append(HoneypotResponse(**hp.to_dict()))
+    return res
+
+###############################################################################
+# list / inspect
+###############################################################################
 @router.get("/", response_model=List[HoneypotResponse])
-async def get_all_honeypots():
-    """Get a list of all honeypots in the system"""
+async def list_all():
     try:
-        honeypot_list = []
-        containers = get_podman_client().containers.list(all=True, filters={'label': 'owner=hive'})
-
-        for container in containers:
-            honeypot = Honeypot()
-            honeypot.get_honeypot_details(container.id)
-            honeypot_list.append(HoneypotResponse(**honeypot.to_dict()))
-
-        return honeypot_list
-    except Exception as e:
-        raise handle_honeypot_error(e)
+        return _hp_responses(_list_ids("label=service=hive-honeypot-manager"))
+    except Exception as exc:
+        _err(exc)
 
 
-@router.get("/type/{honeypot_type}", response_model=List[HoneypotResponse])
-async def get_honeypots_by_type(honeypot_type: str):
-    """Get all honeypots of a specific type"""
+@router.get("/name/{name}", response_model=HoneypotResponse)
+async def inspect(name: str):
+    hp = Honeypot()
+    if not hp.get_honeypot_details(name):
+        _err(HTTPException(status_code=404, detail="Honeypot not found"))
+    return HoneypotResponse(**hp.to_dict())
+
+###############################################################################
+# create
+###############################################################################
+@router.post("/", response_model=HoneypotResponse, status_code=201)
+async def create(body: HoneypotCreate):
+    hp = Honeypot()
     try:
-        # Validate that the type exists
-        if not HoneypotConfig.type_exists(honeypot_type):
-            raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_type}' not found in configuration")
+        hp.create_honeypot(**body.model_dump())
+        hp.get_honeypot_details(hp.honeypot_name)
+        return HoneypotResponse(**hp.to_dict())
+    except Exception as exc:
+        _err(exc)
 
-        honeypot_list = []
-        containers = get_podman_client().containers.list(all=True, filters={'label': f'hive.type='
-                                                                                  f'{honeypot_type}'})
+###############################################################################
+# lifecycle – returns dict with message *and* honeypot details
+###############################################################################
 
-        # Process the containers that match the filter
-        for container in containers:
-            honeypot = Honeypot()
-            honeypot.get_honeypot_details(container.id)
-            honeypot_list.append(HoneypotResponse(**honeypot.to_dict()))
+def _do(verb: str, name: str, msg: str):
+    hp = Honeypot()
+    # Get honeypot details returns None instead of raising when not found
+    if not hp.get_honeypot_details(name):
+        # Return a proper 404 response when honeypot doesn't exist
+        _err(HTTPException(status_code=404, detail=f"Honeypot '{name}' not found"))
 
-        # Add debugging to help identify issues
-        logger.info(f"Found {len(containers)} containers of type {honeypot_type}")
+    if verb == "delete" and hp.honeypot_status == "running":
+        _err(HoneypotContainerError("Cannot delete a running honeypot – stop it first"))
 
-        return honeypot_list
-    except Exception as e:
-        logger.error(f"Error getting honeypots by type: {str(e)}")
-        raise handle_honeypot_error(e)
-
-
-@router.get("/status/{honeypot_status}", response_model=List[HoneypotResponse])
-async def get_honeypots_by_status(honeypot_status: str):
-    """Get all honeypots with a specific status"""
+    op = getattr(hp, f"{verb}_honeypot")
     try:
-        honeypot_list = []
-        containers = get_podman_client().containers.list(
-            all=True,
-            filters={'label': 'owner=hive', 'status': honeypot_status}
-        )
-
-        for container in containers:
-            honeypot = Honeypot()
-            honeypot.get_honeypot_details(container.id)
-            honeypot_list.append(HoneypotResponse(**honeypot.to_dict()))
-
-        return honeypot_list
-    except Exception as e:
-        raise handle_honeypot_error(e)
-
-@router.get("/name/{honeypot_name}", response_model=HoneypotResponse)
-async def get_honeypot(honeypot_name: str):
-    """Get details for a specific honeypot"""
-    try:
-        honeypot = Honeypot()
-        result = honeypot.get_honeypot_details(honeypot_name)
-
-        if result is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Honeypot not found"
-            )
-        return HoneypotResponse(**honeypot.to_dict())
-    except HTTPException as e:
-        raise e  # Re-raise HTTP exceptions
-    except Exception as e:
-        raise handle_honeypot_error(e)
+        op()
+        # For deletion operations, the honeypot will be gone, so handle accordingly
+        if verb == "delete":
+            return {
+                "message": msg,
+                "honeypot": hp.to_dict(),
+            }
+        
+        # For other operations, refresh details
+        hp.get_honeypot_details(hp.honeypot_name)  # refresh
+        return {
+            "message": msg,
+            "honeypot": hp.to_dict(),
+        }
+    except Exception as exc:
+        _err(exc)
 
 
-@router.post("/", response_model=HoneypotResponse, status_code=status.HTTP_201_CREATED)
-async def create_honeypot(honeypot_data: HoneypotCreate):
-    """Create a new honeypot"""
-    try:
-        # Validate honeypot type exists before attempting creation
-        if not HoneypotConfig.type_exists(honeypot_data.honeypot_type):
-            raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_data.honeypot_type}' not found in configuration")
-        # Validate honeypot directory exists
-        honeypot_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'honeypots', 
-            honeypot_data.honeypot_type
-        )
-        if not os.path.exists(honeypot_path):
-            raise FileNotFoundError(f"Honeypot directory '{honeypot_path}' does not exist")
-            
-        honeypot = Honeypot()
-        success = honeypot.create_honeypot(
-            honeypot_type=honeypot_data.honeypot_type,
-            honeypot_port=honeypot_data.honeypot_port,
-            honeypot_cpu_limit=honeypot_data.honeypot_cpu_limit,
-            honeypot_cpu_quota=honeypot_data.honeypot_cpu_quota,
-            honeypot_memory_limit=honeypot_data.honeypot_memory_limit,
-            honeypot_memory_swap_limit=honeypot_data.honeypot_memory_swap_limit
-        )
-        honeypot.get_honeypot_details(honeypot.honeypot_name)
-        if success:
-            return HoneypotResponse(**honeypot.to_dict())
-        else:
-            raise HoneypotError("Failed to create honeypot")
-
-    except Exception as e:
-        if isinstance(e, HoneypotExistsError):
-            # Add more context to this specific error
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"A honeypot using port {honeypot_data.honeypot_port} already exists. Please use a different port."
-            )
-        raise handle_honeypot_error(e)
+@router.post("/{name}/start")
+async def start(name: str):
+    return _do("start", name, "Honeypot started successfully")
 
 
-@router.post("/{honeypot_name}/start")
-async def start_honeypot(honeypot_name: str):
-    """Start a honeypot"""
-    try:
-        honeypot = Honeypot()
-        honeypot.get_honeypot_details(honeypot_name)
-
-        if honeypot.honeypot_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Honeypot not found"
-            )
-
-        if honeypot.honeypot_status == "running":
-            return {"message": f"Honeypot '{honeypot.honeypot_name}' has already started"}
-
-        success = honeypot.start_honeypot()
-        if success:
-            return {"message": f"Honeypot started successfully"}
-        else:
-            raise HoneypotContainerError("Failed to start honeypot")
-
-    except (HoneypotError, HoneypotPrivilegedPortError) as e:
-        error = handle_honeypot_error(e)
-        raise error
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise handle_honeypot_error(e)
+@router.post("/{name}/stop")
+async def stop(name: str):
+    return _do("stop", name, "Honeypot stopped successfully")
 
 
-@router.post("/{honeypot_name}/stop")
-async def stop_honeypot(honeypot_name: str):
-    """Stop a honeypot"""
-    try:
-        honeypot = Honeypot()
-        honeypot.get_honeypot_details(honeypot_name)
-
-        if honeypot.honeypot_name is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Honeypot not found"
-            )
-
-        if honeypot.honeypot_status == "exited":
-            return {"message": f"Honeypot '{honeypot.honeypot_name}' is already stopped"}
-
-        success = honeypot.stop_honeypot()
-        if success:
-            return {"message": f"Honeypot stopped successfully"}
-        else:
-            raise HoneypotContainerError("Failed to stop honeypot")
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise handle_honeypot_error(e)
+@router.post("/{name}/restart")
+async def restart(name: str):
+    return _do("restart", name, "Honeypot restarted successfully")
 
 
-@router.post("/{honeypot_name}/restart")
-async def restart_honeypot(honeypot_name: str):
-    """Restart a honeypot"""
-    try:
-        honeypot = Honeypot()
-        honeypot.get_honeypot_details(honeypot_name)
+@router.delete("/{name}")
+async def delete(name: str):
+    return _do("delete", name, "Honeypot deleted successfully")
 
-        if honeypot.honeypot_name is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Honeypot not found"
-            )
-
-        success = honeypot.restart_honeypot()
-        if success:
-            return {"message": "Honeypot restarted successfully"}
-        else:
-            raise HoneypotContainerError("Failed to restart honeypot")
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise handle_honeypot_error(e)
-
-
-@router.delete("/{honeypot_name}")
-async def delete_honeypot(honeypot_name: str):
-    """Delete a honeypot"""
-    try:
-        honeypot = Honeypot()
-        honeypot.get_honeypot_details(honeypot_name)
-
-        if honeypot.honeypot_name is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Honeypot not found"
-            )
-
-        success = honeypot.delete_honeypot()
-        if success:
-            return {"message": "Honeypot deleted successfully"}
-        else:
-            raise HoneypotContainerError("Failed to delete honeypot")
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise handle_honeypot_error(e)
-
-
+###############################################################################
+# metadata
+###############################################################################
 @router.get("/types", response_model=List[str])
-async def get_honeypot_types():
-    """Get a list of all available honeypot types from configuration"""
-    try:
-        return Honeypot.get_available_honeypot_types()
-    except Exception as e:
-        raise handle_honeypot_error(e)
+async def types():
+    return HoneypotConfig.types()
 
 
 @router.get("/types/{honeypot_type}/config")
-async def get_honeypot_type_config(honeypot_type: str):
-    """Get the configuration details for a specific honeypot type"""
+async def type_cfg(honeypot_type: str):
     try:
-        if not HoneypotConfig.type_exists(honeypot_type):
-            raise HoneypotTypeNotFoundError(f"Honeypot type '{honeypot_type}' not found in configuration")
+        return HoneypotConfig.get(honeypot_type)
+    except Exception as exc:
+        _err(exc)
+
+###############################################################################
+# Filtered honeypot listing
+###############################################################################
+@router.get("/type/{honeypot_type}", response_model=List[HoneypotResponse])
+async def list_honeypots_by_type(honeypot_type: str):
+    """Get all honeypots of a specific type (e.g., ssh, ftp)."""
+    try:
+        # First check if the honeypot type is valid
+        if not HoneypotConfig.exists(honeypot_type):
+            _err(HoneypotTypeNotFoundError(f"Unknown honeypot type: {honeypot_type}"))
         
-        config = HoneypotConfig.get_config(honeypot_type)
-        return config
-    except Exception as e:
-        raise handle_honeypot_error(e)
+        # Filter containers by both service label and type label
+        ids = _list_ids(
+            "label=service=hive-honeypot-manager", 
+            f"label=hive.type={honeypot_type}"
+        )
+        
+        # Convert to response objects
+        honeypots = _hp_responses(ids)
+        
+        # Return 404 if no honeypots found for this type
+        if not honeypots:
+            _err(HTTPException(
+                status_code=404, 
+                detail=f"No honeypots of type '{honeypot_type}' found in the system"
+            ))
+            
+        return honeypots
+    except Exception as exc:
+        _err(exc)
+
+
+@router.get("/status/{status}", response_model=List[HoneypotResponse])
+async def list_honeypots_by_status(status: str):
+    """Get all honeypots with a specific status (e.g., running, exited, stopped)."""
+    try:
+        # Validate status values
+        valid_statuses = ["running", "stopped", "exited", "created", "configured"]
+        if status not in valid_statuses:
+            _err(HTTPException(
+                status_code=400,
+                detail=f"Invalid status value. Must be one of: {', '.join(valid_statuses)}"
+            ))
+        
+        # Get all honeypot IDs
+        all_ids = _list_ids("label=service=hive-honeypot-manager")
+        
+        # Filter by status manually since Podman doesn't directly support status filtering
+        # across all container states through the CLI in a consistent way
+        all_honeypots = _hp_responses(all_ids)
+        filtered_honeypots = [hp for hp in all_honeypots if hp.status == status]
+        
+        # Return 404 if no honeypots found with this status
+        if not filtered_honeypots:
+            _err(HTTPException(
+                status_code=404,
+                detail=f"No honeypots with status '{status}' found in the system"
+            ))
+            
+        return filtered_honeypots
+    except Exception as exc:
+        _err(exc)
