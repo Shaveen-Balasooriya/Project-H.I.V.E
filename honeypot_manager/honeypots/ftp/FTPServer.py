@@ -221,16 +221,15 @@ class FTPServer(FTPHandler):
             
             # Prepare log data
             log_data = {
-                "ip": self.client_ip, 
-                "port": self.client_port,
                 "honeypot_type": "ftp",
+                "attacker_ip": self.client_ip, 
+                "attacker_port": self.client_port,
                 "username": self.username,
                 "password": self.password,
-                "entered_time": self.session_start.isoformat(),
-                "exited_time": session_end.isoformat(),
-                "commands": filtered_commands,
-                # FTP typically doesn't have a user-agent like HTTP or SSH
-                "user_agent": ""
+                "time_of_entry": self.session_start.isoformat() + "Z",
+                "time_of_exit": session_end.isoformat() + "Z",
+                "commands_executed": filtered_commands,
+                "user-agent": ""  # FTP doesn't have user-agent
             }
             
             # Create async task to send to NATS

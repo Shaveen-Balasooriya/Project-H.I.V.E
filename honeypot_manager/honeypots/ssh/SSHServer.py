@@ -116,15 +116,15 @@ class SSHServer(paramiko.ServerInterface):
                 
                 session_end = datetime.datetime.now()
                 log_data = {
-                    "ip": self.client_ip,
-                    "port": self.client_port,
-                    "honeypot_type": "ssh",  # Hardcoded as per requirements
-                    "user_agent": self.user_agent,
+                    "honeypot_type": "ssh",
+                    "attacker_ip": self.client_ip,
+                    "attacker_port": self.client_port,
+                    "user-agent": self.user_agent or "",
                     "username": self.username,
                     "password": self.password,
-                    "entered_time": self.session_start.isoformat(),
-                    "exited_time": session_end.isoformat(),
-                    "commands": filtered_commands
+                    "time_of_entry": self.session_start.isoformat() + "Z",
+                    "time_of_exit": session_end.isoformat() + "Z",
+                    "commands_executed": filtered_commands
                 }
                 asyncio.run(self._send_log_to_nats(log_data))
     

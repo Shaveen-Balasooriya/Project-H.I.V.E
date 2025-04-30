@@ -61,9 +61,9 @@ def main() -> None:
     logger.info("=" * 50)
     
     # Log NATS configuration 
-    nats_url = os.getenv("NATS_URL", "nats://hive-nats-server:4222")
-    nats_stream = os.getenv("NATS_STREAM", "honeypot")
-    nats_subject = os.getenv("NATS_SUBJECT", "honeypot.logs")
+    nats_url = os.getenv("NATS_URL")
+    nats_stream = os.getenv("NATS_STREAM")
+    nats_subject = os.getenv("NATS_SUBJECT")
     honeypot_type = os.getenv("HONEYPOT_TYPE", "ssh")
     
     logger.info(f"NATS Configuration: URL={nats_url}, Stream={nats_stream}, Subject={nats_subject}")

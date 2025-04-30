@@ -5,7 +5,8 @@ authentication:
     - username: "user"
       password: "password123"
 
+banner: "220 ProFTPD 1.3.5e Server [ftp.example.com] FTP server ready"
+
 ftp:
-  banner: "220 ProFTPD 1.3.5e Server [ftp.example.com] FTP server ready"
   max_connections: 10
   connection_limit: 32768

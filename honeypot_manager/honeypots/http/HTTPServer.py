@@ -28,9 +28,9 @@ class HoneypotHTTPRequestHandler(BaseHTTPRequestHandler):
     # Track client sessions
     active_sessions = {}
     
-    def __init__(self, *args, allowed_credentials=None, server_header="Apache/2.4.41", auth_realm="Secure Area", **kwargs):
+    def __init__(self, *args, allowed_credentials=None, banner="Apache/2.4.41", auth_realm="Secure Area", **kwargs):
         self.allowed_credentials = allowed_credentials or []
-        self.server_version = server_header
+        self.server_version = banner
         self.sys_version = ""
         self.auth_realm = auth_realm
         self.session_start = datetime.datetime.now()
@@ -112,15 +112,15 @@ class HoneypotHTTPRequestHandler(BaseHTTPRequestHandler):
             try:
                 # Prepare log data
                 log_data = {
-                    "ip": session_data['ip'],
-                    "port": session_data['port'],
                     "honeypot_type": "http",
+                    "attacker_ip": session_data['ip'],
+                    "attacker_port": session_data['port'],
+                    "user-agent": session_data['user_agent'],
                     "username": session_data['username'],
                     "password": session_data['password'],
-                    "user_agent": session_data['user_agent'],
-                    "entered_time": session_data['start_time'].isoformat(),
-                    "exited_time": session_end.isoformat(),
-                    "commands": session_data['commands']
+                    "time_of_entry": session_data['start_time'].isoformat() + "Z",
+                    "time_of_exit": session_end.isoformat() + "Z",
+                    "commands_executed": session_data['commands']
                 }
                 
                 # Send to NATS
