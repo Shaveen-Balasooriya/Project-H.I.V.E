@@ -1,0 +1,278 @@
+{% if honeypots %} {% for honeypot in honeypots %}
+<!-- Honeypot Card with hover effect -->
+<div
+  class="honeypot-card bg-dark-200 rounded-lg overflow-hidden border border-dark-400 shadow-dark text-white transition-all duration-300 hover:border-accent"
+>
+  <!-- Card Header with Title & Status -->
+  <div
+    class="p-4 bg-dark-200 border-b border-dark-400 flex justify-between items-center"
+  >
+    <h3 class="font-kanit text-lg truncate text-white flex items-center">
+      <span
+        class="inline-block w-2 h-2 rounded-full mr-2 {% if honeypot.status == 'running' %}bg-green-400 {% elif honeypot.status == 'stopped' %}bg-yellow-400 {% elif honeypot.status == 'exited' %}bg-red-400 {% elif honeypot.status == 'created' %}bg-amber-400 {% else %}bg-gray-400{% endif %}"
+      >
+      </span>
+      {{ honeypot.name|upper }}
+    </h3>
+    <span
+      class="status-indicator px-2 py-1 rounded-full text-xs font-semibold shadow-sm {% if honeypot.status == 'running' %}bg-green-400 text-green-900 {% elif honeypot.status == 'stopped' %}bg-yellow-400 text-yellow-900 {% elif honeypot.status == 'exited' %}bg-red-400 text-red-900 {% elif honeypot.status == 'created' %}bg-amber-400 text-amber-900 {% else %}bg-gray-400 text-gray-900{% endif %}"
+    >
+      {{ honeypot.status|title }}
+    </span>
+  </div>
+
+  <!-- Card Body with Details -->
+  <div class="p-5 space-y-3 bg-dark-300">
+    <div
+      class="flex justify-between items-center py-1.5 border-b border-dark-400"
+    >
+      <span class="text-gray-300 flex items-center">
+        <svg
+          class="w-4 h-4 mr-2 text-accent"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+          />
+        </svg>
+        Type:
+      </span>
+      <span class="font-semibold">{{ honeypot.type|upper }}</span>
+    </div>
+    <div
+      class="flex justify-between items-center py-1.5 border-b border-dark-400"
+    >
+      <span class="text-gray-300 flex items-center">
+        <svg
+          class="w-4 h-4 mr-2 text-accent"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+        Port:
+      </span>
+      <span class="font-semibold">{{ honeypot.port }}</span>
+    </div>
+    <div class="flex justify-between items-center py-1.5">
+      <span class="text-gray-300 flex items-center">
+        <svg
+          class="w-4 h-4 mr-2 text-accent"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"
+          />
+        </svg>
+        ID:
+      </span>
+      <span class="font-semibold">{{ honeypot.id[:12] }}</span>
+    </div>
+  </div>
+
+  <!-- Card Footer with Action Buttons - Fixed height solution -->
+  <div
+    class="h-[72px] bg-dark-200 border-t border-dark-400 p-4 flex items-center"
+  >
+    <div class="w-full grid grid-cols-2 gap-3">
+      {% if honeypot.status == 'running' %}
+      <button
+        class="restart-honeypot button-glow flex justify-center items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm w-full transition-all shadow-sm hover:shadow"
+        data-honeypot-name="{{ honeypot.name }}"
+      >
+        <svg
+          class="w-4 h-4 mr-1 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        Restart
+      </button>
+      <button
+        class="stop-honeypot button-glow flex justify-center items-center bg-accent hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm w-full transition-all shadow-sm hover:shadow"
+        data-honeypot-name="{{ honeypot.name }}"
+      >
+        <svg
+          class="w-4 h-4 mr-1 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+          />
+        </svg>
+        Stop
+      </button>
+      {% else %}
+      <button
+        class="start-honeypot button-glow flex justify-center items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm w-full transition-all shadow-sm hover:shadow"
+        data-honeypot-name="{{ honeypot.name }}"
+      >
+        <svg
+          class="w-4 h-4 mr-1 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        Start
+      </button>
+      <button
+        class="delete-honeypot button-glow flex justify-center items-center bg-accent hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm w-full transition-all shadow-sm hover:shadow"
+        data-honeypot-name="{{ honeypot.name }}"
+      >
+        <svg
+          class="w-4 h-4 mr-1 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+        Delete
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %} {% else %}
+<!-- Empty State -->
+<div
+  class="col-span-full flex flex-col items-center justify-center p-12 bg-dark-200 rounded-lg text-center border border-dark-400 shadow-dark text-white"
+>
+  <div class="rounded-full bg-dark-300 p-5 mb-6">
+    <svg
+      class="w-16 h-16 text-accent"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1"
+        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+      ></path>
+    </svg>
+  </div>
+  <h3 class="font-kanit text-2xl mb-2">No Honeypots Found</h3>
+  <p class="text-gray-400 mb-6 max-w-md">
+    No honeypots match your current filter criteria or no honeypots have been
+    created yet.
+  </p>
+  <a
+    href="{{ url_for('frontend.create_honeypot') }}"
+    id="empty-create-btn"
+    class="bg-accent text-secondary px-6 py-2.5 rounded-md font-kanit text-lg btn-hover-effect transition-all flex items-center"
+  >
+    <svg
+      class="w-5 h-5 mr-2"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+      />
+    </svg>
+    Create Your First Honeypot
+  </a>
+</div>
+{% endif %}
+
+<style>
+  /* Add hover effect to honeypot cards */
+  .honeypot-card {
+    transition: all 0.3s ease;
+  }
+  .honeypot-card:hover {
+    border-color: #ff3d4c !important;
+  }
+
+  /* Button glow effects */
+  .button-glow {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  /* Green button glow (Start and Restart) */
+  .start-honeypot.button-glow:hover,
+  .restart-honeypot.button-glow:hover {
+    box-shadow: 0 0 15px rgba(52, 211, 153, 0.7);
+    transform: translateY(-2px);
+    background-color: #059669 !important; /* Keep original green color */
+  }
+
+  /* Red button glow (Stop and Delete) */
+  .stop-honeypot.button-glow:hover,
+  .delete-honeypot.button-glow:hover {
+    box-shadow: 0 0 15px rgba(255, 61, 76, 0.7);
+    transform: translateY(-2px);
+    background-color: #ff3d4c !important; /* Keep original accent color */
+  }
+
+  /* Active state for all buttons */
+  .button-glow:active {
+    transform: translateY(1px);
+    filter: brightness(110%);
+  }
+</style>
+
+<script>
+  // Debounce function removed from here - now handled in the main honeypot_manager.js
+  // Event listeners are now attached via the attachEventListenersToButtons() function
+</script>

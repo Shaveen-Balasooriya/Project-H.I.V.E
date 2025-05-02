@@ -1,6 +1,7 @@
 authentication:
   allowed_users:
-  - username: string
-    password: string
-banner: string
+  - username: admin
+    password: admin123
+    
+banner: SSH-2.0-OpenSSH_8.9p1 Ubuntu-4ubuntu0.7
 ssh_key_path: ssh_host_rsa_key

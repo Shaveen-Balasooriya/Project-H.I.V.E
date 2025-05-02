@@ -24,7 +24,8 @@ from honeypot_manager.util.exceptions import (
 )
 from common.helpers import PodmanError, ResourceError, PodmanRunner, logger
 
-router = APIRouter(prefix="/honeypot-manager", tags=["honeypot-manager"])
+# Fix the prefix - remove duplicate /honeypot-manager as it gets prefixed in main.py
+router = APIRouter(tags=["honeypot-manager"])
 
 ###############################################################################
 # Error mapping – shared helper
@@ -375,10 +376,10 @@ async def list_honeypots_by_type(honeypot_type: str):
 
 @router.get("/status/{status}", response_model=List[HoneypotResponse])
 async def list_honeypots_by_status(status: str):
-    """Get all honeypots with a specific status (e.g., running, exited, stopped)."""
+    """Get all honeypots with a specific status (e.g., started, exited, created)."""
     try:
-        # Validate status values
-        valid_statuses = ["running", "stopped", "exited", "created", "configured"]
+        # Validate status values - updated to use only Created, Started, and Exited
+        valid_statuses = ["created", "started", "exited"]
         if status not in valid_statuses:
             _err(HTTPException(
                 status_code=400,
@@ -388,10 +389,16 @@ async def list_honeypots_by_status(status: str):
         # Get all honeypot IDs
         all_ids = _list_ids("label=service=hive-honeypot-manager")
         
-        # Filter by status manually since Podman doesn't directly support status filtering
-        # across all container states through the CLI in a consistent way
+        # Filter by status manually - map running to started for consistency
         all_honeypots = _hp_responses(all_ids)
-        filtered_honeypots = [hp for hp in all_honeypots if hp.status == status]
+        filtered_honeypots = []
+        
+        for hp in all_honeypots:
+            # Map 'running' status to 'started' for frontend consistency
+            if status == 'started' and hp.status == 'running':
+                filtered_honeypots.append(hp)
+            elif hp.status == status:
+                filtered_honeypots.append(hp)
         
         # Return 404 if no honeypots found with this status
         if not filtered_honeypots:
