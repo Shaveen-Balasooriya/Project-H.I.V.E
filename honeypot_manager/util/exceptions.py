@@ -14,6 +14,7 @@ __all__ = [
     "HoneypotContainerError",
     "HoneypotPrivilegedPortError",
     "HoneypotActiveConnectionsError",
+    "HoneypotPortInUseError",
 ]
 
 ###############################################################################
@@ -41,6 +42,10 @@ class HoneypotTypeNotFoundError(HoneypotError):
 
 class HoneypotImageError(HoneypotError):
     """Failure while building or pulling the honeypot image."""
+
+
+class HoneypotPortInUseError(HoneypotError):
+    """Port is already in use by another honeypot or service."""
 
 ###############################################################################
 # Runtime / lifecycle errors

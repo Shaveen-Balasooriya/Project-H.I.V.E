@@ -3,16 +3,19 @@ from __future__ import annotations
 
 import json
 import re
-from typing import List, Dict, Any
+import os
+import logging
+import socket
+from typing import List, Dict, Any, Optional
 import subprocess
 import yaml
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Path as PathParam
+from pydantic import BaseModel, Field, validator
 
 from honeypot_manager.models.Honeypot import HoneypotManager as Honeypot
 from honeypot_manager.models.Honeypot import HoneypotConfig
-from honeypot_manager.schemas.honeypot import HoneypotCreate, HoneypotResponse
 from honeypot_manager.util.exceptions import (
     HoneypotActiveConnectionsError,
     HoneypotContainerError,
@@ -21,11 +24,38 @@ from honeypot_manager.util.exceptions import (
     HoneypotPrivilegedPortError,
     HoneypotTypeNotFoundError,
     HoneypotError,
+    HoneypotPortInUseError,
 )
 from common.helpers import PodmanError, ResourceError, PodmanRunner, logger
 
 # Fix the prefix - remove duplicate /honeypot-manager as it gets prefixed in main.py
 router = APIRouter(tags=["honeypot-manager"])
+
+###############################################################################
+# Response models
+###############################################################################
+# Define the response models needed for the API endpoints
+class HoneypotResponse(BaseModel):
+    id: str
+    name: str
+    type: str
+    port: int
+    status: str
+    image: str
+
+class HoneypotCreate(BaseModel):
+    honeypot_type: str
+    honeypot_port: int
+    honeypot_cpu_limit: int = 100_000
+    honeypot_cpu_quota: int = 50_000
+    honeypot_memory_limit: str = "512m"
+    honeypot_memory_swap_limit: str = "512m"
+    authentication: Optional[Dict[str, Any]] = None
+    banner: Optional[str] = None
+
+class PortCheckResponse(BaseModel):
+    available: bool
+    message: str
 
 ###############################################################################
 # Error mapping – shared helper
@@ -410,3 +440,59 @@ async def list_honeypots_by_status(status: str):
         return filtered_honeypots
     except Exception as exc:
         _err(exc)
+
+###############################################################################
+# Port check endpoint
+###############################################################################
+@router.get(
+    "/port-check/{port}",
+    response_model=PortCheckResponse,
+    summary="Check if a port is available",
+    description="Check if a specified port is available for a honeypot to use. Validates port number, range, and availability."
+)
+async def check_port_availability(port: str = PathParam(..., description="Port number to check")) -> Dict[str, Any]:
+    """Check if a port is available for a honeypot to use."""
+    # Validate that the port is an integer
+    try:
+        port_int = int(port)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Port must be an integer"
+        )
+    
+    # Validate port range
+    if not 1 <= port_int <= 65535:
+        raise HTTPException(
+            status_code=400,
+            detail="Port must be between 1 and 65535"
+        )
+    
+    # Check if port is privileged (below 1024) when not running as root
+    if port_int < 1024 and os.geteuid() != 0:
+        return {
+            "available": False,
+            "message": f"Port {port_int} is a privileged port (below 1024) and requires root access"
+        }
+    
+    # Check if the port is already in use
+    manager = Honeypot()
+    try:
+        in_use = manager.is_port_in_use(port_int)
+        
+        if in_use:
+            return {
+                "available": False,
+                "message": f"Port {port_int} is already in use by another honeypot or service"
+            }
+        else:
+            return {
+                "available": True,
+                "message": f"Port {port_int} is available"
+            }
+    except Exception as exc:
+        logger.error(f"Error checking port availability: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to check port availability: {str(exc)}"
+        )
