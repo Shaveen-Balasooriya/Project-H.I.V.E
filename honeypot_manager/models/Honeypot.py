@@ -27,6 +27,7 @@ from honeypot_manager.util.exceptions import (
     HoneypotImageError,
     HoneypotPrivilegedPortError,
     HoneypotTypeNotFoundError,
+    HoneypotPortInUseError,
 )
 
 logger = logging.getLogger("hive.honeypot")
@@ -203,6 +204,11 @@ class HoneypotManager:
         if not HoneypotConfig.exists(honeypot_type):
             raise HoneypotTypeNotFoundError(honeypot_type)
         self._validate_port(honeypot_port)
+        
+        # Check if port is already being used by another honeypot
+        if self.is_port_in_use(honeypot_port):
+            raise HoneypotPortInUseError(f"Port {honeypot_port} is already in use by another honeypot or service")
+            
         self.net_mgr.ensure_exists()
 
         self.honeypot_type = honeypot_type
@@ -446,6 +452,68 @@ class HoneypotManager:
                 raise HoneypotPrivilegedPortError(f"Permission denied when trying to {verb} honeypot")
             else:
                 raise HoneypotContainerError(f"Failed to {verb} honeypot '{self.honeypot_name}': {exc}")
+
+    # ------------------------------------------------------------------
+    # port validation
+    # ------------------------------------------------------------------
+    def is_port_in_use(self, port: int) -> bool:
+        """Check if the specified port is already being used by any honeypot container.
+        
+        Args:
+            port: The port number to check
+            
+        Returns:
+            bool: True if port is already in use, False otherwise
+        """
+        try:
+            # List all containers with the honeypot manager label and check their ports
+            cmd = [
+                "podman", "ps", "-a", 
+                "--format", "{{.Labels}}", 
+                "--filter", "label=service=hive-honeypot-manager"
+            ]
+            output = self.runner.run(cmd, return_output=True)
+            
+            # Check each line for port information in the labels
+            for line in output.strip().splitlines():
+                if not line:
+                    continue
+                    
+                # Extract port from labels (format: map[hive.port:22 hive.type:ssh service:hive-honeypot-manager])
+                if "hive.port:" in line:
+                    parts = line.split("hive.port:")
+                    if len(parts) > 1:
+                        port_str = parts[1].split()[0].strip()
+                        try:
+                            existing_port = int(port_str)
+                            if existing_port == port:
+                                logger.info(f"Port {port} is already in use by another honeypot")
+                                return True
+                        except ValueError:
+                            # If port can't be parsed as int, continue checking
+                            continue
+            
+            # Additionally check if the port is already bound by any process on the host
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                # Set timeout to avoid hanging
+                s.settimeout(0.5)
+                # Try to bind to the port to see if it's available
+                try:
+                    s.bind(("127.0.0.1", port))
+                    # Port is free
+                    return False
+                except (socket.error, OSError):
+                    # Port is in use
+                    logger.info(f"Port {port} is already bound by a process on the host")
+                    return True
+                finally:
+                    s.close()
+                    
+            return False
+        except Exception as exc:
+            logger.error(f"Error checking if port {port} is in use: {exc}")
+            # If there's an error, assume the port might be in use to be safe
+            return True
 
     # ------------------------------------------------------------------
     # render for API

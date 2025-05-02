@@ -46,14 +46,40 @@ class SSHServer(paramiko.ServerInterface):
         self._generate_ssh_key()
 
     def _generate_ssh_key(self):
+        need_new_key = True
+        
         if os.path.exists(self.ssh_key_path):
-            logger.info(f"SSH key already exists at {self.ssh_key_path}")
-            return
-
-        key = paramiko.RSAKey.generate(2048)
-        key.write_private_key_file(self.ssh_key_path)
-        os.chmod(self.ssh_key_path, 0o600)
-        logger.info(f"Generated SSH key at {self.ssh_key_path}")
+            # Check if key file has valid content
+            try:
+                with open(self.ssh_key_path, 'r') as f:
+                    if f.read().strip():
+                        # File exists and has content
+                        need_new_key = False
+                        logger.info(f"SSH key already exists at {self.ssh_key_path}")
+                    else:
+                        logger.warning(f"SSH key file exists but is empty, regenerating")
+            except Exception as e:
+                logger.warning(f"Error reading SSH key file: {e}, regenerating")
+        
+        if need_new_key:
+            # Backup any existing file
+            if os.path.exists(self.ssh_key_path):
+                backup_path = f"{self.ssh_key_path}.bak.{int(datetime.datetime.now().timestamp())}"
+                try:
+                    os.rename(self.ssh_key_path, backup_path)
+                    logger.info(f"Backed up corrupted key file to {backup_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to back up key file: {e}")
+                    try:
+                        os.remove(self.ssh_key_path)
+                    except:
+                        pass
+            
+            # Generate new key
+            key = paramiko.RSAKey.generate(2048)
+            key.write_private_key_file(self.ssh_key_path)
+            os.chmod(self.ssh_key_path, 0o600)
+            logger.info(f"Generated SSH key at {self.ssh_key_path}")
 
     def check_channel_request(self, kind: str, chanid: int) -> int:
         return paramiko.OPEN_SUCCEEDED if kind == 'session' else paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED

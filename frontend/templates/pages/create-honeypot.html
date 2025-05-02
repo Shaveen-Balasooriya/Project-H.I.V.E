@@ -1,0 +1,284 @@
+{% extends "layouts/base.html" %} {% block content %}
+
+<div
+  class="bg-dark-100 text-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition-all border border-dark-400"
+>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-kanit font-bold text-accent">Create Honeypot</h1>
+    <a
+      href="/"
+      class="bg-dark-300 text-white px-4 py-2 rounded-md hover:bg-dark-400 transition-all flex items-center"
+    >
+      <svg
+        class="w-5 h-5 mr-1"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Honeypot Creation Form -->
+  <div class="bg-dark-200 border border-dark-400 rounded-lg p-6 shadow-lg">
+    <form id="create-honeypot-form" class="space-y-6">
+      <!-- Stepper Progress -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div
+              class="bg-accent text-white rounded-full w-8 h-8 flex items-center justify-center font-bold"
+            >
+              1
+            </div>
+            <div class="ml-2 text-white font-medium">Basic Information</div>
+          </div>
+          <div class="flex-grow mx-4 h-1 bg-dark-300 relative">
+            <div class="absolute inset-0 bg-accent" style="width: 25%"></div>
+          </div>
+          <div class="flex items-center">
+            <div
+              class="bg-dark-300 text-gray-400 rounded-full w-8 h-8 flex items-center justify-center font-bold"
+            >
+              2
+            </div>
+            <div class="ml-2 text-gray-400 font-medium">Configuration</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two-column layout for form fields -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Left Column -->
+        <div class="space-y-5">
+          <!-- Honeypot Type -->
+          <div>
+            <label
+              for="honeypot-type"
+              class="block text-sm font-medium text-gray-300 mb-2"
+              >Honeypot Type <span class="text-accent">*</span></label
+            >
+            <div class="relative">
+              <select
+                id="honeypot-type"
+                name="honeypot-type"
+                required
+                class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-3 py-2 focus:ring-2 focus:ring-accent focus:border-transparent"
+              >
+                <option value="" disabled selected>Select Honeypot Type</option>
+                <option value="ssh">SSH Server</option>
+                <option value="ftp">FTP Server</option>
+                <option value="telnet">Telnet Server</option>
+                <option value="http">HTTP Server</option>
+              </select>
+            </div>
+            <p class="mt-1 text-xs text-gray-400">
+              Choose the service type to emulate
+            </p>
+          </div>
+
+          <!-- Honeypot Port -->
+          <div>
+            <label
+              for="honeypot-port"
+              class="block text-sm font-medium text-gray-300 mb-2"
+              >Port Number <span class="text-accent">*</span></label
+            >
+            <input
+              type="number"
+              id="honeypot-port"
+              name="honeypot-port"
+              min="1"
+              max="65535"
+              placeholder="Enter port number (1-65535)"
+              required
+              class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-3 py-2 focus:ring-2 focus:ring-accent focus:border-transparent"
+            />
+            <p class="mt-1 text-xs text-gray-400">
+              Standard ports: SSH (22), FTP (21), Telnet (23), HTTP (80)
+            </p>
+          </div>
+
+          <!-- Port Security Notice -->
+          <div
+            class="bg-dark-300 border border-dark-400 rounded-md p-3 text-sm"
+          >
+            <div class="flex items-start">
+              <svg
+                class="w-5 h-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <p class="text-yellow-400">
+                Using ports below 1024 requires elevated privileges on the host
+                system.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-5">
+          <!-- Banner Text -->
+          <div>
+            <label
+              for="honeypot-banner"
+              class="block text-sm font-medium text-gray-300 mb-2"
+              >Welcome Banner</label
+            >
+            <textarea
+              id="honeypot-banner"
+              name="honeypot-banner"
+              rows="4"
+              placeholder="Custom banner text for the honeypot"
+              class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-3 py-2 focus:ring-2 focus:ring-accent focus:border-transparent"
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-400">
+              Text shown to clients when they connect to the service
+            </p>
+          </div>
+
+          <!-- Authentication Preview -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-sm font-medium text-gray-300"
+                >Authentication</label
+              >
+              <span class="text-xs text-gray-400"
+                >Default credentials will be added</span
+              >
+            </div>
+            <div class="bg-dark-300 border border-dark-400 rounded-md p-3">
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="text-gray-400">Username</div>
+                <div class="text-gray-400">Password</div>
+                <div class="text-white">admin</div>
+                <div class="text-white">admin123</div>
+                <div class="text-white">root</div>
+                <div class="text-white">toor</div>
+                <div class="text-white">user</div>
+                <div class="text-white">password</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden Auth Container for Form Submission -->
+      <div id="auth-container" class="hidden"></div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-between pt-4 border-t border-dark-400">
+        <button
+          type="button"
+          id="cancel-btn"
+          class="bg-dark-300 hover:bg-dark-400 text-white px-6 py-2 rounded-md transition-all flex items-center"
+        >
+          <svg
+            class="w-5 h-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Cancel
+        </button>
+        <button
+          type="submit"
+          id="submit-btn"
+          class="bg-accent hover:bg-red-600 text-white px-6 py-2 rounded-md btn-hover-effect transition-all flex items-center"
+        >
+          <svg
+            class="w-5 h-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          Create Honeypot
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Information Panel -->
+  <div class="mt-8 bg-dark-200 border border-dark-400 rounded-lg p-6 shadow-lg">
+    <div class="flex items-start mb-4">
+      <svg
+        class="w-6 h-6 text-accent mr-2 flex-shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <h3 class="text-xl font-kanit font-semibold text-white">
+        About Honeypots
+      </h3>
+    </div>
+    <p class="text-gray-300 mb-3">
+      Honeypots are security mechanisms designed to detect, deflect, or study
+      unauthorized access attempts to information systems.
+    </p>
+    <ul class="list-disc list-inside space-y-2 text-gray-300 ml-4">
+      <li>
+        Choose appropriate port numbers to attract specific types of attacks
+      </li>
+      <li>Use meaningful banners that mimic real services</li>
+      <li>
+        Consider using common usernames and passwords to attract brute force
+        attempts
+      </li>
+      <li>Each honeypot runs in an isolated container for security</li>
+    </ul>
+  </div>
+</div>
+
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/components/honeypot-form.js') }}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize the honeypot creation form
+    initHoneypotCreationForm();
+
+    // Cancel button redirects back to dashboard
+    document
+      .getElementById("cancel-btn")
+      .addEventListener("click", function () {
+        window.location.href = "/";
+      });
+  });
+</script>
+{% endblock %}

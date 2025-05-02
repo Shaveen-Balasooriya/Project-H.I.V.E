@@ -1,0 +1,94 @@
+{% extends "layouts/base.html" %} {% block content %}
+<div class="max-w-5xl mx-auto">
+  <!-- Page Header with Back Button -->
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h2 class="font-kanit text-3xl text-accent">Create Honeypot</h2>
+      <p class="text-gray-400 mt-1">
+        Configure and deploy a new honeypot to capture attack data
+      </p>
+    </div>
+    <a
+      href="{{ url_for('frontend.honeypot_manager') }}"
+      id="back-to-manager"
+      class="bg-dark-300 text-white px-4 py-2 rounded-md flex items-center hover:bg-dark-400 transition-colors"
+    >
+      <svg
+        class="w-5 h-5 mr-1"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Back to Manager
+    </a>
+  </div>
+
+  <!-- Progress indicator -->
+  <div class="w-full bg-dark-200 h-1 mb-8 rounded-full overflow-hidden">
+    <div
+      id="progress-bar"
+      class="bg-accent h-full transition-all duration-300"
+      style="width: 25%"
+    ></div>
+  </div>
+
+  <!-- Honeypot Creation Form in Card -->
+  <div
+    class="bg-dark-100 rounded-lg shadow-xl border border-dark-400 overflow-hidden mb-8"
+  >
+    {% include "partials/honeypot_creation_form.html" %}
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<!-- Include the required component scripts -->
+<script src="{{ url_for('static', filename='js/components/honeypot-stepper.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/honeypot-auth.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/honeypot-form.js') }}"></script>
+
+<!-- Progress bar update script -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Update progress bar when steps change
+    const stepItems = document.querySelectorAll(".step-item");
+    const progressBar = document.getElementById("progress-bar");
+    const totalSteps = stepItems.length;
+
+    function updateProgressBar(currentStep) {
+      if (progressBar) {
+        const progressPercentage = (currentStep / totalSteps) * 100;
+        progressBar.style.width = `${progressPercentage}%`;
+      }
+    }
+
+    // Check for step changes by observing class changes on step items
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (mutation.attributeName === "class") {
+          const activeStep = document.querySelector(".step-item.active");
+          if (activeStep) {
+            const stepNumber = parseInt(activeStep.getAttribute("data-step"));
+            updateProgressBar(stepNumber);
+          }
+        }
+      });
+    });
+
+    stepItems.forEach(function (item) {
+      observer.observe(item, { attributes: true });
+    });
+
+    // Initialize progress bar
+    updateProgressBar(1);
+  });
+</script>
+
+<!-- Page-specific initialization -->
+<script src="{{ url_for('static', filename='js/pages/create-honeypot-page.js') }}"></script>
+{% endblock %}
