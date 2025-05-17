@@ -1,330 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project H.I.V.E</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Project H.I.V.E{% endblock %}</title>
 
-    <!-- Favicon - simplified approach -->
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
-    <link
-      rel="shortcut icon"
-      href="{{ url_for('static', filename='favicon.ico') }}"
-    />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Kanit:wght@400;700&family=Iceland&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS -->
+  <link href="{{ url_for('static', filename='css/tailwind.css') }}" rel="stylesheet">
 
-    <!-- Custom Google Fonts: Iceland, Kanit and Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Iceland&family=Kanit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+  <style>
+    :root {
+      --accent-red: #FF3D4C;
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-gray-200 font-inter">
 
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: "#000000", // Black
-              secondary: "#FFFFFF", // White
-              accent: "#FF3D4C", // Reddish
-              dark: {
-                100: "#1A1A1A", // Very dark gray (for panels)
-                200: "#242424", // Dark gray (for cards)
-                300: "#2D2D2D", // Medium dark gray (for inputs)
-                400: "#363636", // Lighter dark gray (for borders)
-              },
-            },
-            fontFamily: {
-              iceland: ["Iceland", "cursive"],
-              kanit: ["Kanit", "sans-serif"],
-              sans: ["Inter", "sans-serif"],
-            },
-          },
-        },
-      };
-    </script>
+  <!-- Notification container -->
+  <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
 
-    <style>
-      body {
-        background-color: #121212;
-        color: #ffffff;
-        font-family: "Inter", sans-serif;
-      }
+  <!-- Navbar -->
+  <header class="bg-gray-800 border-b border-gray-700">
+    <div class="container mx-auto flex items-center justify-between py-4 px-6">
+      <a href="/" class="text-2xl font-kanit text-white">H.I.V.E</a>
+      <nav>
+        <ul class="flex space-x-6">
+          <li><a href="/" class="hover:text-[var(--accent-red)]">Dashboard</a></li>
+          <li><a href="/create-honeypot" class="hover:text-[var(--accent-red)]">Create</a></li>
+          <li><a href="/settings" class="hover:text-[var(--accent-red)]">Settings</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
 
-      .font-iceland {
-        font-family: "Iceland", cursive;
-      }
+  <!-- Main Content -->
+  <main class="container mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
 
-      .font-kanit {
-        font-family: "Kanit", sans-serif;
-      }
+  <!-- Footer -->
+  <footer class="bg-gray-800 border-t border-gray-700 py-4">
+    <div class="container mx-auto text-center text-gray-500 text-sm">
+      &copy; {{ current_year }} Project H.I.V.E. All rights reserved.
+    </div>
+  </footer>
 
-      .glow-text {
-        text-shadow: 0 0 8px rgba(255, 61, 76, 0.8);
-      }
-
-      .btn-hover-effect:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 15px rgba(255, 61, 76, 0.4);
-      }
-
-      /* Stepper button glow effect */
-      .stepper-btn-glow {
-        position: relative;
-        overflow: hidden;
-      }
-
-      .stepper-btn-glow:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0 15px rgba(255, 61, 76, 0.6);
-        transition: all 0.3s ease;
-      }
-
-      .stepper-btn-glow:hover::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(
-          circle at center,
-          rgba(255, 61, 76, 0.2),
-          transparent 70%
-        );
-        pointer-events: none;
-      }
-
-      /* Validation styling */
-      input.border-red-500 {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.5) !important;
-      }
-
-      .auth-error-message {
-        font-weight: 500;
-        margin-bottom: 8px;
-        display: block;
-      }
-
-      /* Disabled button style */
-      button[disabled] {
-        opacity: 0.5 !important;
-        cursor: not-allowed !important;
-        pointer-events: none !important;
-      }
-
-      /* Custom shadow utilities */
-      .shadow-dark {
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.4);
-      }
-
-      .shadow-dark-lg {
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6),
-          0 6px 12px rgba(0, 0, 0, 0.5);
-      }
-
-      .shadow-dark-hover {
-        transition: box-shadow 0.3s ease, transform 0.2s ease;
-      }
-
-      .shadow-dark-hover:hover {
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7),
-          0 8px 16px rgba(0, 0, 0, 0.6);
-        transform: translateY(-3px);
-      }
-
-      /* Notification system */
-      #notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 16px 20px;
-        border-radius: 8px;
-        z-index: 9999;
-        transition: all 0.3s ease;
-        opacity: 0;
-        transform: translateY(-10px);
-        max-width: 350px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-      }
-
-      #notification.show {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .success {
-        background-color: rgba(16, 185, 129, 0.2); /* green with opacity */
-        color: #10b981; /* green-500 */
-        border-left: 4px solid #10b981; /* green-500 */
-      }
-
-      .error {
-        background-color: rgba(239, 68, 68, 0.2); /* red with opacity */
-        color: #ef4444; /* red-500 */
-        border-left: 4px solid #ef4444; /* red-500 */
-      }
-
-      .info {
-        background-color: rgba(59, 130, 246, 0.2); /* blue with opacity */
-        color: #3b82f6; /* blue-500 */
-        border-left: 4px solid #3b82f6; /* blue-500 */
-      }
-
-      /* Dark theme specific styles */
-      input,
-      textarea {
-        background-color: #2d2d2d !important;
-        border-color: #363636 !important;
-        color: #ffffff !important;
-      }
-
-      /* Fixed select styling to prevent double borders */
-      select {
-        background-color: #2d2d2d !important;
-        border-color: #363636 !important;
-        color: #ffffff !important;
-        appearance: none !important;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
-        background-position: right 0.5rem center !important;
-        background-repeat: no-repeat !important;
-        background-size: 1.5em 1.5em !important;
-        padding-right: 2.5rem !important;
-        border-width: 1px !important; /* Ensure single border */
-        border-style: solid !important;
-      }
-
-      input:focus,
-      select:focus,
-      textarea:focus {
-        border-color: #ff3d4c !important;
-        outline: none !important;
-        box-shadow: 0 0 0 2px rgba(255, 61, 76, 0.25) !important;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Notification Container -->
-    <div id="notification" class="hidden"></div>
-
-    <!-- Header -->
-    <header class="bg-primary">
-      <div class="container mx-auto px-4 py-4">
-        <div class="flex flex-col sm:flex-row justify-between items-center">
-          <!-- Logo & Title -->
-          <div class="flex items-center space-x-4 mb-4 sm:mb-0">
-            <img
-              src="{{ url_for('static', filename='images/logo.png') }}"
-              alt="HIVE Logo"
-              class="h-16 w-auto"
-            />
-            <div>
-              <h1 class="font-iceland text-3xl text-accent mb-0 leading-tight">
-                Project H.I.V.E
-              </h1>
-              <p
-                class="font-iceland text-gray-400 mt-[-8px]"
-                style="font-size: 1.05rem"
-              >
-                Honeypot Intrusion Vigilance Engine
-              </p>
-            </div>
-          </div>
-
-          <!-- Navigation -->
-          <nav>
-            <ul class="flex space-x-6">
-              <li>
-                <a
-                  href="/"
-                  class="font-kanit text-xl text-white hover:text-accent transition-colors"
-                  >Honeypot Manager</a
-                >
-              </li>
-              <li>
-                <a
-                  href="/settings"
-                  class="font-kanit text-xl text-white hover:text-accent transition-colors"
-                  >Settings</a
-                >
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-      {% block content %}{% endblock %}
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-primary py-4 mt-8">
-      <div class="container mx-auto px-4 text-center">
-        <p class="text-gray-500 text-sm">
-          Project H.I.V.E &copy; 2025 | Honeypot Intrusion Vigilance Engine
-        </p>
-      </div>
-    </footer>
-
-    <!-- Notification System JavaScript -->
-    <script>
-      // Notification system
-      const notificationElement = document.getElementById("notification");
-
-      function showNotification(message, type = "info", duration = 5000) {
-        // Clear any existing timeout
-        if (window.notificationTimeout) {
-          clearTimeout(window.notificationTimeout);
-        }
-
-        // Remove any existing classes
-        notificationElement.classList.remove(
-          "success",
-          "error",
-          "info",
-          "hidden"
-        );
-
-        // Add appropriate class based on type
-        notificationElement.classList.add(type);
-
-        // Set message with HTML structure - no close button
-        notificationElement.innerHTML = "";
-        const messageSpan = document.createElement("span");
-        messageSpan.textContent = message;
-        notificationElement.appendChild(messageSpan);
-
-        // Show notification
-        notificationElement.classList.add("show");
-
-        // Auto-hide after duration
-        window.notificationTimeout = setTimeout(() => {
-          hideNotification();
-        }, duration);
-      }
-
-      function hideNotification() {
-        notificationElement.classList.remove("show");
-        setTimeout(() => {
-          notificationElement.classList.add("hidden");
-        }, 300);
-      }
-
-      // Make the notification function available globally
-      window.showNotification = showNotification;
-    </script>
-
-    <!-- Page-specific scripts -->
-    {% block scripts %}{% endblock %}
-  </body>
+  <!-- Base Scripts -->
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
 </html>

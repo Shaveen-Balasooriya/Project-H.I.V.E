@@ -47,10 +47,25 @@
   </div>
 </div>
 {% endblock %} {% block scripts %}
+<!-- Include API utilities first so they're available to other scripts -->
+<script src="{{ url_for('static', filename='js/api/honeypot-api.js') }}"></script>
+
 <!-- Include the required component scripts -->
 <script src="{{ url_for('static', filename='js/components/honeypot-stepper.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/honeypot-auth.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/honeypot-form.js') }}"></script>
+
+<!-- Include banner animation styles -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/banner-animation.css') }}"
+/>
+
+<!-- Add this in the head section -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/banner-enhancements.css') }}"
+/>
 
 <!-- Progress bar update script -->
 <script>

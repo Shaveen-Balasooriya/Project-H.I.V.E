@@ -3,6 +3,15 @@
  * This module handles the multi-step form navigation for honeypot creation
  */
 
+// Tracking variables for port validation
+let portValidationTimeout = null;
+let lastPortChecked = null;
+let lastPortAvailable = null;
+
+// Track the latest port check request
+let latestPortCheckToken = 0;
+let currentPortCheckController = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the stepper
     initStepper();
@@ -18,6 +27,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Prevent Enter key from submitting form prematurely
     preventFormSubmissionOnEnter();
+
+    const form = document.getElementById('create-honeypot-form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            // Removed: showLoadingOverlay();
+        });
+    }
 });
 
 // Prevent accidental form submission when pressing Enter
@@ -196,6 +212,22 @@ function initStepper() {
                     return false;
                 }
                 
+                // Check if port has red border (indicating unavailability)
+                const portInput = document.getElementById('honeypot-port');
+                if (portInput) {
+                    // If the port is not available, block the stepper
+                    if (
+                        !lastPortChecked ||
+                        lastPortChecked !== portInput.value.trim() ||
+                        lastPortAvailable !== true
+                    ) {
+                        showNotification('Please select an available port before proceeding.', 'error');
+                        portInput.classList.add('border-red-500');
+                        showFieldError(portInput, 'Port is not available or has not been checked.');
+                        return false;
+                    }
+                }
+                
                 if (!banner || !banner.trim()) {
                     showNotification('Please enter a banner message', 'error');
                     return false;
@@ -247,8 +279,40 @@ function initStepper() {
                 return true;
                 
             case 3:
-                // Validate authentication credentials
-                return validateCredentials();
+                // Validate authentication credentials using the new function
+                // Ensure the function is available globally or imported
+                if (typeof window.validateAllCredentialRows === 'function') {
+                    if (!window.validateAllCredentialRows()) {
+                        showNotification('Please ensure all credential fields meet the requirements (3-32 characters) and are not empty.', 'error');
+                        return false;
+                    }
+                } else {
+                    console.warn('validateAllCredentialRows function not found for step 3 validation.');
+                    // Fallback or default validation if needed
+                    const credentialsContainer = document.getElementById('auth-credentials-container');
+                    if (!credentialsContainer) return true; // No container, assume valid
+
+                    const rows = credentialsContainer.querySelectorAll('.credential-row');
+                    if (rows.length < 3) {
+                        showNotification('You need at least 3 credential pairs', 'error');
+                        return false;
+                    }
+                    // Basic check for empty fields as fallback
+                    let hasEmptyFields = false;
+                    rows.forEach(row => {
+                        row.querySelectorAll('input').forEach(input => {
+                            if (!input.value.trim()) {
+                                hasEmptyFields = true;
+                                input.classList.add('border-red-500');
+                            }
+                        });
+                    });
+                    if (hasEmptyFields) {
+                         showNotification('All credential fields must be filled', 'error');
+                         return false;
+                    }
+                }
+                return true; // Passed validation
                 
             case 4:
                 // Review - no validation needed
@@ -308,37 +372,6 @@ function initStepper() {
         const numValue = parseInt(value);
         if (numValue < min || numValue > max) {
             showNotification(`${fieldName} must be between ${min} and ${max}`, 'error');
-            return false;
-        }
-        
-        return true;
-    }
-    
-    // Validate credentials
-    function validateCredentials() {
-        const credentialsContainer = document.getElementById('auth-credentials-container');
-        if (!credentialsContainer) return true;
-        
-        const rows = credentialsContainer.querySelectorAll('.credential-row');
-        if (rows.length < 3) {
-            showNotification('You need at least 3 credential pairs', 'error');
-            return false;
-        }
-        
-        let hasEmptyFields = false;
-        
-        rows.forEach(row => {
-            const inputs = row.querySelectorAll('input');
-            inputs.forEach(input => {
-                if (!input.value.trim()) {
-                    hasEmptyFields = true;
-                    input.classList.add('border-red-500');
-                }
-            });
-        });
-        
-        if (hasEmptyFields) {
-            showNotification('All credential fields must be filled', 'error');
             return false;
         }
         
@@ -569,13 +602,13 @@ function initFormValidation() {
     // Validate port field
     const portInput = document.getElementById('honeypot-port');
     if (portInput) {
+        // Validate and check port on every input (no debounce)
         portInput.addEventListener('input', function() {
-            validatePortField(this);
+            checkPortAvailabilityAPI(this);
         });
-        
-        // Also validate on blur
+        // Optionally, still check on blur for completeness
         portInput.addEventListener('blur', function() {
-            validatePortField(this, true);
+            checkPortAvailabilityAPI(this);
         });
     }
     
@@ -590,6 +623,74 @@ function initFormValidation() {
         bannerInput.addEventListener('blur', function() {
             validateBannerField(this, true);
         });
+    }
+}
+
+/**
+ * Check if the entered port is available via API
+ */
+async function checkPortAvailabilityAPI(portField) {
+    if (!portField || !portField.value) return;
+
+    const port = portField.value.trim();
+    const thisToken = ++latestPortCheckToken;
+
+    // Abort any previous request
+    if (currentPortCheckController) {
+        currentPortCheckController.abort();
+    }
+    currentPortCheckController = new AbortController();
+    const signal = currentPortCheckController.signal;
+
+    portField.dataset.checkingPort = port;
+
+    if (typeof showNotification === 'function') {
+        showNotification('Checking port availability...', 'info');
+    }
+
+    portField.classList.add('border-yellow-500');
+    clearFieldError(portField);
+
+    try {
+        const response = await fetch(`/api/honeypot/port-check/${port}`, { signal });
+        const data = await response.json();
+
+        // Only update if this is the latest request and the value hasn't changed
+        if (thisToken !== latestPortCheckToken || portField.value.trim() !== port) {
+            return;
+        }
+        portField.classList.remove('border-yellow-500');
+
+        lastPortChecked = port;
+        if (data.available) {
+            portField.classList.remove('border-red-500');
+            portField.classList.add('border-green-500');
+            lastPortAvailable = true;
+            if (typeof showNotification === 'function') {
+                showNotification(data.message || `Port ${port} is available`, 'success');
+            }
+        } else {
+            portField.classList.remove('border-green-500', 'border-yellow-500');
+            portField.classList.add('border-red-500');
+            lastPortAvailable = false;
+            if (typeof showNotification === 'function') {
+                showNotification(data.message || `Port ${port} is already in use`, 'error');
+            }
+        }
+    } catch (error) {
+        // Ignore abort errors
+        if (error.name === 'AbortError') return;
+        if (thisToken !== latestPortCheckToken || portField.value.trim() !== port) return;
+        portField.classList.remove('border-yellow-500');
+        lastPortAvailable = null;
+        if (typeof showNotification === 'function') {
+            showNotification(`Error checking port: ${error.message}. Please verify manually.`, 'error');
+        }
+    } finally {
+        if (thisToken === latestPortCheckToken) {
+            delete portField.dataset.checkingPort;
+            currentPortCheckController = null;
+        }
     }
 }
 
@@ -649,23 +750,15 @@ function validateBannerField(field, showError = false) {
 }
 
 function showFieldError(field, message) {
-    // Remove any existing error
+    // Remove any existing error/status messages (but do not show new ones)
     clearFieldError(field);
-    
-    // Create error message
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'text-xs text-red-400 mt-1 field-error';
-    errorDiv.textContent = message;
-    
-    // Insert after the field
-    field.parentNode.insertBefore(errorDiv, field.nextSibling);
+    // No DOM error message shown
 }
 
 function clearFieldError(field) {
-    const errorDiv = field.parentNode.querySelector('.field-error');
-    if (errorDiv) {
-        errorDiv.remove();
-    }
+    const parent = field.parentNode;
+    if (!parent) return;
+    parent.querySelectorAll('.field-error, .port-status, .field-message').forEach(el => el.remove());
 }
 
 async function fetchHoneypotTypeDetails(selectedType) {
@@ -673,29 +766,19 @@ async function fetchHoneypotTypeDetails(selectedType) {
     if (!bannerInput) return;
     
     try {
-        // Show loading indication
-        bannerInput.setAttribute('disabled', 'disabled');
-        bannerInput.placeholder = "Loading banner...";
+        bannerInput.placeholder = "Enter banner text that will be shown to users";
         
-        // Get authentication details and banner for this honeypot type
+        // Use the correct endpoint
         const response = await fetch(`/api/honeypot/types/${selectedType}/auth-details`);
+        const data = await response.json();
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch honeypot details');
+        // Update banner if provided
+        if (data && data.banner) {
+            bannerInput.value = data.banner;
+            bannerInput.dispatchEvent(new Event('input')); // Trigger validation
         }
-        
-        const detailsData = await response.json();
-        
-        // Set banner if available in the response
-        if (detailsData.banner) {
-            bannerInput.value = detailsData.banner;
-        } else {
-            bannerInput.value = `Welcome to ${selectedType.toUpperCase()} server`;
-        }
-        
     } catch (error) {
         console.error('Error fetching honeypot details:', error);
-        bannerInput.value = `Welcome to ${selectedType.toUpperCase()} server`;
     } finally {
         bannerInput.removeAttribute('disabled');
         bannerInput.placeholder = "Enter the banner text that will be shown to users";

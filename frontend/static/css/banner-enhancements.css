@@ -1,0 +1,45 @@
+/* Banner preview cursor animation */
+@keyframes cursor-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 2px;
+  animation: cursor-blink 1s infinite;
+}
+
+/* Warning icon pulse animation */
+@keyframes warning-pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+#security-warning svg {
+  animation: warning-pulse 2s infinite;
+}
+
+/* Character counter highlight when approaching limit */
+#banner-char-counter.text-yellow-500,
+#banner-line-counter.text-yellow-500 {
+  font-weight: 500;
+}
+
+/* Banner preview styling */
+#banner-preview {
+  font-family: 'Courier New', monospace;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+}

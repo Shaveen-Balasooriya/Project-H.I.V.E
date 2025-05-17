@@ -1,0 +1,548 @@
+<header
+  style="
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #ff3d4c;
+    padding: 1.25rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    border-bottom: 2px solid #ff3d4c;
+    transition: all 0.3s ease;
+  "
+  class="bg-primary/80 text-accent w-full"
+>
+  <div
+    style="
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    "
+    class="container mx-auto px-6"
+  >
+    <!-- Logo / Brand - Smaller size -->
+    <a
+      href="/"
+      style="
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #ff3d4c;
+        background: transparent;
+        height: 50px; /* Reduced height from 60px */
+      "
+      class="flex items-center no-underline group"
+    >
+      <!-- Text group first - Reduced font size and hidden on mobile -->
+      <div
+        class="text-group hidden sm:flex"
+        style="
+          display: none;
+          flex-direction: column;
+          background: transparent;
+          padding: 0;
+          margin: 0;
+          border: none;
+        "
+      >
+        <span
+          style="
+            font-size: 2.2rem; /* Reduced from 3rem */
+            font-family: 'Iceland', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            line-height: 0.9;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            border: none;
+            color: #ff3d4c;
+          "
+          >PROJECT H.I.V.E</span
+        >
+        <span
+          style="
+            font-size: 0.9rem; /* Reduced from 1rem */
+            font-family: 'Iceland', sans-serif;
+            letter-spacing: 0.1em;
+            background: transparent;
+            padding: 0;
+            margin-top: 0.1rem;
+            border: none;
+            color: #ff3d4c;
+          "
+          >Accessible. Intelligent. Vigilant.</span
+        >
+      </div>
+
+      <!-- Logo Image - Always visible -->
+      <div
+        style="
+          margin-left: 0;
+          margin-right: 0;
+          position: relative;
+          background: transparent;
+          width: 45px; /* Reduced from 55px */
+          height: 50px; /* Reduced from 65px */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transform: translateZ(0);
+        "
+        class="sm:mr-4 sm:order-first"
+      >
+        <img
+          src="{{ url_for('static', filename='assets/images/logo.svg') }}"
+          alt="Project HIVE Logo"
+          style="
+            height: 100%;
+            width: 100%;
+            object-fit: contain;
+            background: transparent;
+            filter: drop-shadow(0 0 10px rgba(255, 61, 76, 0.3));
+            transition: all 0.3s ease;
+          "
+          onmouseover="this.style.filter='drop-shadow(0 0 15px rgba(255, 61, 76, 0.5))'"
+          onmouseout="this.style.filter='drop-shadow(0 0 10px rgba(255, 61, 76, 0.3))'"
+        />
+      </div>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <nav style="display: none" class="hidden md:flex">
+      <ul
+        style="
+          display: flex;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          align-items: center;
+        "
+      >
+        <li style="margin: 0 1.25rem">
+          <a
+            href="/honeypots"
+            style="
+              color: #ffffff;
+              text-decoration: none;
+              position: relative;
+              padding: 0.5rem 0.25rem;
+              font-weight: 500;
+              letter-spacing: 1px;
+              display: inline-block;
+              font-family: 'Iceland', sans-serif;
+              font-size: 1.125rem;
+              transition: all 0.2s ease;
+            "
+            onmouseover="this.style.opacity='0.8'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+            >HONEYPOT MANAGER</a
+          >
+        </li>
+        <li style="margin: 0 1.25rem">
+          <a
+            href="/services"
+            style="
+              color: #ffffff;
+              text-decoration: none;
+              position: relative;
+              padding: 0.5rem 0.25rem;
+              font-weight: 500;
+              letter-spacing: 1px;
+              display: inline-block;
+              font-family: 'Iceland', sans-serif;
+              font-size: 1.125rem;
+              transition: all 0.2s ease;
+            "
+            onmouseover="this.style.opacity='0.8'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+            >SERVICES</a
+          >
+        </li>
+        <li style="margin: 0 1.25rem">
+          <a
+            href="/about"
+            style="
+              color: #ffffff;
+              text-decoration: none;
+              position: relative;
+              padding: 0.5rem 0.25rem;
+              font-weight: 500;
+              letter-spacing: 1px;
+              display: inline-block;
+              font-family: 'Iceland', sans-serif;
+              font-size: 1.125rem;
+              transition: all 0.2s ease;
+            "
+            onmouseover="this.style.opacity='0.8'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+            >ABOUT</a
+          >
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Mobile menu button -->
+    <button
+      id="mobile-menu-button"
+      style="
+        background: none;
+        border: none;
+        color: #ff3d4c;
+        cursor: pointer;
+        padding: 0.5rem;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border-radius: 50%;
+      "
+      onmouseover="this.style.backgroundColor='rgba(255,61,76,0.1)'"
+      onmouseout="this.style.backgroundColor='transparent'"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="28"
+        height="28"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#ff3d4c"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Navigation Menu -->
+  <div
+    id="mobile-menu"
+    style="
+      display: none;
+      border-top: 1px solid rgba(255, 61, 76, 0.3);
+      margin-top: 0.5rem;
+      background-color: #0a0a0a;
+      width: 100%;
+      overflow: hidden;
+    "
+  >
+    <div style="padding: 0.75rem 1rem; max-width: 1200px; margin: 0 auto">
+      <a
+        href="/honeypots"
+        style="
+          display: block;
+          padding: 0.9rem 1rem;
+          color: #ffffff;
+          text-decoration: none;
+          border-radius: 6px;
+          margin: 0.25rem 0;
+          font-weight: 600;
+          font-family: 'Iceland', sans-serif;
+          font-size: 1.2rem;
+          letter-spacing: 1px;
+          transition: all 0.2s ease;
+        "
+        onmouseover="this.style.backgroundColor='rgba(255,61,76,0.1)'; this.style.paddingLeft='1.5rem'"
+        onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='1rem'"
+        >HONEYPOTS</a
+      >
+      <a
+        href="/services"
+        style="
+          display: block;
+          padding: 0.9rem 1rem;
+          color: #ffffff;
+          text-decoration: none;
+          border-radius: 6px;
+          margin: 0.25rem 0;
+          font-weight: 600;
+          font-family: 'Iceland', sans-serif;
+          font-size: 1.2rem;
+          letter-spacing: 1px;
+          transition: all 0.2s ease;
+        "
+        onmouseover="this.style.backgroundColor='rgba(255,61,76,0.1)'; this.style.paddingLeft='1.5rem'"
+        onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='1rem'"
+        >SERVICES</a
+      >
+      <a
+        href="/about"
+        style="
+          display: block;
+          padding: 0.9rem 1rem;
+          color: #ffffff;
+          text-decoration: none;
+          border-radius: 6px;
+          margin: 0.25rem 0;
+          font-weight: 600;
+          font-family: 'Iceland', sans-serif;
+          font-size: 1.2rem;
+          letter-spacing: 1px;
+          transition: all 0.2s ease;
+        "
+        onmouseover="this.style.backgroundColor='rgba(255,61,76,0.1)'; this.style.paddingLeft='1.5rem'"
+        onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='1rem'"
+        >ABOUT</a
+      >
+    </div>
+  </div>
+</header>
+
+<style>
+  /* Fix navigation display - corrected media query logic */
+  @media (max-width: 768px) {
+    header nav {
+      display: none !important; /* Hide desktop nav on mobile */
+    }
+
+    #mobile-menu-button {
+      display: flex !important; /* Show mobile menu button on mobile */
+    }
+
+    /* Hide title on mobile */
+    .text-group {
+      display: none !important;
+    }
+  }
+
+  @media (min-width: 769px) {
+    header nav {
+      display: flex !important; /* Show desktop nav on desktop */
+    }
+
+    #mobile-menu-button {
+      display: none !important; /* Hide mobile menu button on desktop */
+    }
+
+    /* Show title on larger screens */
+    .text-group {
+      display: flex !important;
+    }
+  }
+
+  /* Adjust title font size for mobile */
+  @media (max-width: 768px) {
+    header a span:first-child {
+      font-size: 1.8rem !important;
+    }
+
+    header a span:last-child {
+      font-size: 0.8rem !important;
+    }
+  }
+
+  /* Adjust logo size for very small screens */
+  @media (max-width: 360px) {
+    header a div[style*="width: 45px"] {
+      width: 35px !important;
+      height: 40px !important;
+    }
+
+    header a span:first-child {
+      font-size: 1.5rem !important;
+    }
+  }
+
+  /* Underline effect for desktop navigation */
+  header nav a:after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffffff;
+    transition: width 0.3s ease;
+  }
+
+  header nav a:hover:after {
+    width: 70%;
+  }
+
+  /* Add styling for the page background */
+  body {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Fix for any potential container width issues */
+  header,
+  footer {
+    width: 100vw !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Additional fixes for white background issues */
+  header *,
+  header *::before,
+  header *::after {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Override any color applied with !important to ensure correct color */
+  .text-accent,
+  [class*="text-accent"],
+  [style*="color: #ff3d4c"] {
+    color: #ff3d4c !important;
+  }
+
+  svg[stroke="currentColor"] {
+    stroke: #ff3d4c !important;
+  }
+
+  /* Modern navigation styling */
+  header nav a {
+    position: relative;
+    color: #ffffff;
+    font-family: "Iceland", sans-serif;
+    font-size: 1.125rem;
+    text-decoration: none;
+    letter-spacing: 1px;
+    padding: 0.5rem 0.25rem;
+    margin: 0 1rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+
+  header nav a:before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #ff3d4c;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  header nav a:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  header nav a:hover:before {
+    transform: translateX(0);
+  }
+
+  header nav a.active:before {
+    transform: translateX(0);
+  }
+
+  /* Mobile menu animation - Fixed */
+  #mobile-menu {
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    overflow: hidden;
+  }
+
+  #mobile-menu.open {
+    max-height: 300px;
+    opacity: 1;
+  }
+
+  /* Make header sticky with smooth transition */
+  @media (min-width: 768px) {
+    header.scrolled {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+      background-color: rgba(0, 0, 0, 0.95);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Change body background
+    document.body.style.backgroundColor = "#000000";
+    document.body.style.color = "#FFFFFF";
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+    document.body.style.width = "100%";
+    document.body.style.overflowX = "hidden";
+
+    const mobileMenuButton = document.getElementById("mobile-menu-button");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    if (mobileMenuButton && mobileMenu) {
+      // Fixed mobile menu toggle
+      mobileMenuButton.addEventListener("click", function () {
+        // Toggle the display property first
+        if (mobileMenu.style.display === "none" || !mobileMenu.style.display) {
+          mobileMenu.style.display = "block";
+          // Wait a tiny bit for the display change to take effect
+          setTimeout(() => {
+            mobileMenu.classList.add("open");
+            mobileMenuButton.innerHTML =
+              '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff3d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+          }, 10);
+        } else {
+          mobileMenu.classList.remove("open");
+          // Wait for the transition to finish before hiding
+          setTimeout(() => {
+            mobileMenu.style.display = "none";
+            mobileMenuButton.innerHTML =
+              '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff3d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>';
+          }, 400);
+        }
+      });
+    }
+
+    // Add active state to current page
+    const currentPath = window.location.pathname;
+    const allLinks = document.querySelectorAll("header a");
+
+    allLinks.forEach((link) => {
+      if (link.getAttribute("href") === currentPath) {
+        link.style.fontWeight = "700";
+        if (link.parentNode.tagName === "LI") {
+          // Add underline to desktop nav
+          link.style.opacity = "1";
+          const underline = document.createElement("div");
+          underline.style.position = "absolute";
+          underline.style.bottom = "0";
+          underline.style.left = "15%";
+          underline.style.width = "70%";
+          underline.style.height = "2px";
+          underline.style.backgroundColor = "#FFFFFF";
+          link.appendChild(underline);
+        } else {
+          // Highlight mobile nav item
+          link.style.backgroundColor = "rgba(255,61,76,0.1)";
+        }
+      }
+    });
+
+    // Enhanced scroll behavior for header
+    const header = document.querySelector("header");
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 10) {
+        header.classList.add("scrolled");
+      } else {
+        header.classList.remove("scrolled");
+      }
+    });
+  });
+</script>

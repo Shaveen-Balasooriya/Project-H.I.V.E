@@ -1,0 +1,397 @@
+/**
+ * Honeypots List Styling
+ */
+
+/* Honeypot Card Styles */
+.honeypot-card {
+  transition: all 0.3s ease;
+  /* Use accent color in the shadow instead of white */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 61, 76, 0.2);
+  max-width: 100%;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.honeypot-card:hover {
+  transform: translateY(-2px);
+  /* Enhance accent color in shadow on hover */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+              0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+/* Status-specific card styling - all with accent color as base */
+.honeypot-card[data-honeypot-status="running"] {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
+              0 0 8px rgba(16, 185, 129, 0.2), 
+              0 0 0 1px rgba(255, 61, 76, 0.2);
+}
+
+.honeypot-card[data-honeypot-status="created"] {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
+              0 0 8px rgba(245, 158, 11, 0.2), 
+              0 0 0 1px rgba(255, 61, 76, 0.2);
+}
+
+.honeypot-card[data-honeypot-status="exited"] {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
+              0 0 8px rgba(239, 68, 68, 0.2), 
+              0 0 0 1px rgba(255, 61, 76, 0.2);
+}
+
+.honeypot-card[data-honeypot-status="running"]:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+              0 0 12px rgba(16, 185, 129, 0.3), 
+              0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+.honeypot-card[data-honeypot-status="created"]:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+              0 0 12px rgba(245, 158, 11, 0.3), 
+              0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+.honeypot-card[data-honeypot-status="exited"]:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+              0 0 12px rgba(239, 68, 68, 0.3), 
+              0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+/* Card sections */
+.honeypot-card .bg-black\/20,
+.honeypot-card .bg-black\/30 {
+  transition: background-color 0.2s ease;
+}
+
+.honeypot-card .bg-black\/20:hover,
+.honeypot-card .bg-black\/30:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Card animations */
+.honeypot-card {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Status pulse effects */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+}
+
+@keyframes pulse-yellow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+}
+
+.honeypot-card[data-honeypot-status="running"] .bg-green-500\/20 {
+  animation: pulse-green 2s infinite;
+}
+
+.honeypot-card[data-honeypot-status="exited"] .bg-red-500\/20 {
+  animation: pulse-red 2s infinite;
+}
+
+.honeypot-card[data-honeypot-status="created"] .bg-yellow-500\/20 {
+  animation: pulse-yellow 2s infinite;
+}
+
+/* Status Indicators */
+.status-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+/* Added subtle pulse animation for running status */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+}
+
+.honeypot-card[data-honeypot-status="running"] .bg-green-500 {
+  animation: pulse-green 2s infinite;
+}
+
+/* Updated button styles with thicker borders */
+.honeypot-action-btn {
+  transition: all 0.2s ease;
+  box-shadow: none;
+  min-width: 80px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  position: relative;
+  overflow: hidden;
+  color: white !important;
+  border-width: 2px !important; /* Increased border thickness from 1px to 2px */
+}
+
+.honeypot-action-btn:hover {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.honeypot-action-btn:active {
+  transform: translateY(1px);
+}
+
+/* Button hover effect */
+.honeypot-action-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background-color: currentColor;
+  opacity: 0.1;
+  transition: height 0.2s ease;
+}
+
+.honeypot-action-btn:hover::after {
+  height: 100%;
+}
+
+/* Button focus styles */
+.honeypot-action-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Button-specific styles - keep transparent background */
+.start-btn {
+  background-color: transparent !important;
+  border-color: rgba(16, 185, 129, 0.6) !important; /* Slightly increased opacity for better visibility */
+}
+.start-btn:hover {
+  background-color: rgba(16, 185, 129, 0.8) !important;
+  border-color: rgba(16, 185, 129, 0.7);
+}
+
+.stop-btn {
+  background-color: transparent !important;
+  border-color: rgba(239, 68, 68, 0.6) !important; /* Slightly increased opacity for better visibility */
+}
+.stop-btn:hover {
+  background-color: rgba(239, 68, 68, 0.8) !important;
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+.restart-btn {
+  background-color: transparent !important;
+  border-color: rgba(245, 158, 11, 0.6) !important; /* Slightly increased opacity for better visibility */
+}
+.restart-btn:hover {
+  background-color: rgba(245, 158, 11, 0.8) !important;
+  border-color: rgba(245, 158, 11, 0.7);
+}
+
+.delete-btn {
+  background-color: transparent !important;
+  border-color: rgba(239, 68, 68, 0.6) !important; /* Slightly increased opacity for better visibility */
+}
+.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.8) !important;
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+/* Disabled button state */
+.honeypot-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.honeypot-action-btn:disabled::after {
+  display: none;
+}
+
+/* Loading state */
+.honeypot-action-btn svg {
+  transition: transform 0.2s ease;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Refine padding on container */
+.action-container {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+/* Loading Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Empty State Styling */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+  margin-bottom: 1rem;
+  color: rgba(156, 163, 175, 0.5);
+}
+
+/* Filter Button States */
+.filter-btn {
+  transition: all 0.2s ease;
+}
+
+.filter-btn.active {
+  background-color: #FF3D4C;
+  color: #000000;
+}
+
+/* Notification System */
+.notification {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  max-width: 24rem;
+  z-index: 50;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+.notification-enter {
+  animation: slideIn 0.3s forwards;
+}
+
+.notification-exit {
+  animation: slideOut 0.3s forwards;
+}
+
+/* Refresh Button - reverting to original styling */
+.refresh-btn {
+  transition: all 0.2s ease;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 500;
+}
+
+.refresh-btn:hover {
+  transform: none;
+  border-color: white !important; /* Just use white border on hover */
+}
+
+.refresh-btn:active {
+  transform: translateY(1px);
+}
+
+/* Enhanced New Honeypot button - ensuring it uses accent color */
+.new-honeypot-btn {
+  position: relative;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  color: white !important;
+  background-color: #FF3D4C !important; /* Force accent color */
+  border-color: rgba(255, 61, 76, 0.3) !important;
+  transition: all 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Replace hover effects with glow effect */
+.new-honeypot-btn:hover {
+  box-shadow: 0 0 15px 5px rgba(255, 61, 76, 0.5); /* Add glow effect with accent color */
+}
+
+.new-honeypot-btn:active {
+  transform: scale(0.98); /* Slight press effect when clicked */
+  box-shadow: 0 0 8px 2px rgba(255, 61, 76, 0.4); /* Reduced glow when pressed */
+}
+
+/* Responsive adjustments for filter panel */
+@media (max-width: 768px) {
+  .filter-control {
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+  
+  .filter-select {
+    width: 100%;
+  }
+  
+  .control-bar {
+    padding: 1.25rem;
+  }
+  
+  .new-honeypot-btn, .refresh-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+}
+
+/* Update existing select styling to match new design */
+#type-filter,
+#status-filter,
+#honeypot-sort {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+  transition: all 0.2s ease;
+}
+
+/* Make the control bar responsive */
+@media (max-width: 768px) {
+  .control-bar {
+    flex-direction: column;
+  }
+  
+  .control-bar > div {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .control-bar > div:last-child {
+    margin-bottom: 0;
+  }
+  
+  #type-filter,
+  #status-filter,
+  #honeypot-sort {
+    min-width: 100%;
+  }
+}

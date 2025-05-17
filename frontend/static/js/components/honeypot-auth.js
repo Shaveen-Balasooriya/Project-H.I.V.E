@@ -3,6 +3,8 @@
  * Handles the credential management for honeypot authentication
  */
 
+const HONEYPOT_MANAGER_API_BASE = '/honeypot_manager';
+
 // Initialize the honeypot authentication component
 function initHoneypotAuthentication() {
     // Handler for adding new credentials
@@ -38,42 +40,52 @@ function initHoneypotAuthentication() {
 function addNewCredential() {
     const container = document.getElementById('auth-credentials-container');
     if (!container) return;
-    
+
+    // Validate all existing rows before adding a new one
+    if (!validateAllCredentialRows()) {
+        showNotification('Please fill in all existing credential fields correctly before adding new ones.', 'warning');
+        return;
+    }
+
     // Get current count to determine new index
     const currentCount = container.querySelectorAll('.credential-row').length;
-    
+
     // Check if we've reached the maximum credentials
     if (currentCount >= 20) {
         showNotification('Maximum of 20 credential pairs allowed', 'error');
         return;
     }
-    
+
     // Create a unique ID for this credential pair
     const credentialId = `credential-${Date.now()}`;
-    
+
     // Create the credential row
     const credentialRow = document.createElement('div');
     credentialRow.className = 'credential-row grid grid-cols-12 gap-3 bg-dark-400 rounded-md p-2';
     credentialRow.setAttribute('data-id', credentialId);
-    
+
     // Fill the row with credential fields
     credentialRow.innerHTML = `
         <div class="col-span-5">
-            <input type="text" 
-                   name="username_${credentialId}" 
-                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
-                   placeholder="Username" 
-                   required>
+            <input type="text"
+                   name="username_${credentialId}"
+                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent credential-input"
+                   placeholder="Username (4-15 chars)"
+                   required
+                   minlength="4"
+                   maxlength="15">
         </div>
         <div class="col-span-5">
-            <input type="text" 
-                   name="password_${credentialId}" 
-                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
-                   placeholder="Password" 
-                   required>
+            <input type="text"
+                   name="password_${credentialId}"
+                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent credential-input"
+                   placeholder="Password (4-15 chars)"
+                   required
+                   minlength="4"
+                   maxlength="15">
         </div>
         <div class="col-span-2 flex justify-center items-center">
-            <button type="button" 
+            <button type="button"
                     class="delete-credential-btn bg-dark-300 hover:bg-red-800 text-white p-1.5 rounded-md transition-colors"
                     aria-label="Delete credential"
                     onclick="deleteCredential('${credentialId}')">
@@ -83,13 +95,19 @@ function addNewCredential() {
             </button>
         </div>
     `;
-    
+
     // Add to container
     container.appendChild(credentialRow);
-    
+
+    // Add event listeners for validation on the new inputs
+    credentialRow.querySelectorAll('.credential-input').forEach(input => {
+        input.addEventListener('input', () => validateCredentialRow(credentialRow));
+        input.addEventListener('blur', () => validateCredentialRow(credentialRow)); // Validate on blur too
+    });
+
     // Update hidden auth container for form submission
     updateAuthContainerFromRows();
-    
+
     // Update the credential count in the summary
     updateCredentialCount();
 }
@@ -125,7 +143,7 @@ function deleteCredential(credentialId) {
 /**
  * Fetch default credentials based on honeypot type
  */
-function fetchDefaultCredentials(honeypotType, container) {
+async function fetchDefaultCredentials(honeypotType, container) {
     if (!container) return;
     
     // Show loading state
@@ -136,113 +154,122 @@ function fetchDefaultCredentials(honeypotType, container) {
         </div>
     `;
     
-    // Fetch from API
-    fetch(`/api/honeypot/type/${honeypotType}/auth-details`)
-        .then(response => response.json())
-        .then(data => {
-            // Clear container
-            container.innerHTML = '';
+    try {
+        // Use the correct endpoint
+        const response = await fetch(`/api/honeypot/types/${honeypotType}/auth-details`);
+        const data = await response.json();
+        
+        // Clear container
+        container.innerHTML = '';
+        
+        // Check if we have authentication data
+        if (data.authentication && Array.isArray(data.authentication.allowed_users)) {
+            const credentials = data.authentication.allowed_users;
             
-            // Check if we have authentication data
-            if (data.authentication && Array.isArray(data.authentication.allowed_users)) {
-                const credentials = data.authentication.allowed_users;
-                
-                credentials.forEach((cred, index) => {
-                    addCredentialToUI(cred.username, cred.password, container);
-                });
-                
-                // Make sure we have at least 3 credentials
-                const currentCount = container.querySelectorAll('.credential-row').length;
-                if (currentCount < 3) {
-                    // Add additional default credentials
-                    const defaultCredentials = [
-                        { username: 'admin', password: 'admin123' },
-                        { username: 'root', password: 'toor' },
-                        { username: 'user', password: 'password' }
-                    ];
-                    
-                    for (let i = currentCount; i < 3; i++) {
-                        const cred = defaultCredentials[i % defaultCredentials.length];
-                        addCredentialToUI(cred.username, cred.password, container);
-                    }
-                }
-            } else {
-                // Add default credentials if none were returned
+            for (const cred of credentials) {
+                await addCredentialToUI(cred.username, cred.password, container);
+            }
+            
+            // Make sure we have at least 3 credentials
+            const currentCount = container.querySelectorAll('.credential-row').length;
+            if (currentCount < 3) {
+                // Add additional default credentials
                 const defaultCredentials = [
                     { username: 'admin', password: 'admin123' },
                     { username: 'root', password: 'toor' },
                     { username: 'user', password: 'password' }
                 ];
                 
-                defaultCredentials.forEach((cred) => {
-                    addCredentialToUI(cred.username, cred.password, container);
-                });
+                for (let i = currentCount; i < 3; i++) {
+                    const cred = defaultCredentials[i % defaultCredentials.length];
+                    await addCredentialToUI(cred.username, cred.password, container);
+                }
             }
             
-            // Update the auth container for form submission
-            updateAuthContainerFromRows();
-            
-            // Update credential count
-            updateCredentialCount();
-        })
-        .catch(error => {
-            console.error('Error fetching default credentials:', error);
-            
-            // Add default credentials on error
-            container.innerHTML = '';
-            
+            showNotification('Authentication credentials loaded successfully', 'success');
+        } else {
+            // Add default credentials if none were returned
             const defaultCredentials = [
                 { username: 'admin', password: 'admin123' },
                 { username: 'root', password: 'toor' },
                 { username: 'user', password: 'password' }
             ];
             
-            defaultCredentials.forEach((cred) => {
-                addCredentialToUI(cred.username, cred.password, container);
-            });
+            for (const cred of defaultCredentials) {
+                await addCredentialToUI(cred.username, cred.password, container);
+            }
             
-            // Update auth container
-            updateAuthContainerFromRows();
-            
-            // Update count
-            updateCredentialCount();
-        });
+            showNotification('Using default authentication credentials', 'info');
+        }
+        
+        // Update the auth container for form submission
+        updateAuthContainerFromRows();
+        
+        // Update credential count
+        updateCredentialCount();
+    } catch (error) {
+        console.error('Error fetching default credentials:', error);
+        showNotification(`Failed to load credentials: ${error.message}`, 'error');
+        
+        // Add default credentials on error
+        container.innerHTML = '';
+        
+        const defaultCredentials = [
+            { username: 'admin', password: 'admin123' },
+            { username: 'root', password: 'toor' },
+            { username: 'user', password: 'password' }
+        ];
+        
+        for (const cred of defaultCredentials) {
+            await addCredentialToUI(cred.username, cred.password, container);
+        }
+        
+        // Update auth container
+        updateAuthContainerFromRows();
+        
+        // Update count
+        updateCredentialCount();
+    }
 }
 
 /**
  * Add a credential to the UI
  */
-function addCredentialToUI(username, password, container) {
+async function addCredentialToUI(username, password, container) {
     if (!container) return;
-    
+
     // Create a unique ID for this credential pair
     const credentialId = `credential-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    
+
     // Create the credential row
     const credentialRow = document.createElement('div');
     credentialRow.className = 'credential-row grid grid-cols-12 gap-3 bg-dark-400 rounded-md p-2';
     credentialRow.setAttribute('data-id', credentialId);
-    
+
     // Fill the row with credential fields
     credentialRow.innerHTML = `
         <div class="col-span-5">
-            <input type="text" 
-                   name="username_${credentialId}" 
+            <input type="text"
+                   name="username_${credentialId}"
                    value="${escapeHtml(username)}"
-                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
-                   placeholder="Username" 
-                   required>
+                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent credential-input"
+                   placeholder="Username (4-15 chars)"
+                   required
+                   minlength="4"
+                   maxlength="15">
         </div>
         <div class="col-span-5">
-            <input type="text" 
-                   name="password_${credentialId}" 
+            <input type="text"
+                   name="password_${credentialId}"
                    value="${escapeHtml(password)}"
-                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
-                   placeholder="Password" 
-                   required>
+                   class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent credential-input"
+                   placeholder="Password (4-15 chars)"
+                   required
+                   minlength="4"
+                   maxlength="15">
         </div>
         <div class="col-span-2 flex justify-center items-center">
-            <button type="button" 
+            <button type="button"
                     class="delete-credential-btn bg-dark-300 hover:bg-red-800 text-white p-1.5 rounded-md transition-colors"
                     aria-label="Delete credential"
                     onclick="deleteCredential('${credentialId}')">
@@ -252,12 +279,68 @@ function addCredentialToUI(username, password, container) {
             </button>
         </div>
     `;
-    
+
     // Add to container
     container.appendChild(credentialRow);
-    
+
+    // Add event listeners for validation
+    credentialRow.querySelectorAll('.credential-input').forEach(input => {
+        input.addEventListener('input', () => validateCredentialRow(credentialRow));
+        input.addEventListener('blur', () => validateCredentialRow(credentialRow)); // Validate on blur too
+    });
+
+    // Validate the newly added row immediately
+    validateCredentialRow(credentialRow);
+
     // Return a slight delay so that multiple credentials don't get the same timestamp
     return new Promise(resolve => setTimeout(resolve, 5));
+}
+
+/**
+ * Validate a single credential row
+ * @param {HTMLElement} row - The credential row element
+ * @returns {boolean} - True if the row is valid, false otherwise
+ */
+function validateCredentialRow(row) {
+    let isValid = true;
+    const inputs = row.querySelectorAll('.credential-input');
+
+    inputs.forEach(input => {
+        const value = input.value.trim();
+        const minLength = 4;
+        const maxLength = 15;
+
+        input.classList.remove('border-red-500', 'border-green-500'); // Reset borders
+
+        if (value.length < minLength || value.length > maxLength) {
+            input.classList.add('border-red-500');
+            isValid = false;
+        } else {
+            input.classList.add('border-green-500');
+        }
+    });
+
+    return isValid;
+}
+
+/**
+ * Validate all credential rows in the container
+ * @returns {boolean} - True if all rows are valid, false otherwise
+ */
+function validateAllCredentialRows() {
+    const container = document.getElementById('auth-credentials-container');
+    if (!container) return true; // No container, no validation needed
+
+    const rows = container.querySelectorAll('.credential-row');
+    let allValid = true;
+
+    rows.forEach(row => {
+        if (!validateCredentialRow(row)) {
+            allValid = false;
+        }
+    });
+
+    return allValid;
 }
 
 /**
@@ -377,3 +460,4 @@ window.initHoneypotAuthentication = initHoneypotAuthentication;
 window.addNewCredential = addNewCredential;
 window.deleteCredential = deleteCredential;
 window.updateAuthContainerFromRows = updateAuthContainerFromRows;
+window.validateAllCredentialRows = validateAllCredentialRows;

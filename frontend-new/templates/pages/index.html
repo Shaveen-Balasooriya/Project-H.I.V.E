@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>H.I.V.E Dashboard</title>
+
+    <!-- Tailwind + Theme -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#000000",
+              secondary: "#FFFFFF",
+              accent: "#FF3D4C",
+            },
+            fontFamily: {
+              display: ["Iceland", "sans-serif"],
+              sans: ["Inter", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
+  </head>
+  <body
+    class="bg-primary text-secondary font-sans flex items-center justify-center h-screen"
+  >
+    <div class="text-center">
+      <h1 class="font-display text-5xl mb-4">Project H.I.V.E</h1>
+      <a
+        href="/honeypot-builder"
+        class="px-6 py-3 bg-accent text-secondary rounded hover:bg-opacity-90 transition"
+        >Build Honeypot</a
+      >
+    </div>
+  </body>
+</html>

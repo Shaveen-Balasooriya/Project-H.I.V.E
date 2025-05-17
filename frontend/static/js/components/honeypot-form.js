@@ -23,47 +23,44 @@ function initHoneypotCreationForm() {
 /**
  * Load default authentication credentials for selected honeypot type
  */
-function loadAuthenticationDefaults() {
+async function loadAuthenticationDefaults() {
     const honeypotTypeSelect = document.getElementById('honeypot-type');
     
-    honeypotTypeSelect.addEventListener('change', function() {
+    honeypotTypeSelect.addEventListener('change', async function() {
         const selectedType = this.value;
         if (!selectedType) return;
         
         // Clear existing credentials
         authenticationData.allowed_users = [];
         
-        // Fetch authentication defaults from the API
-        fetch(`/api/honeypot/type/${selectedType}/auth-details`)
-            .then(response => response.json())
-            .then(data => {
-                console.log("Loaded auth details:", data);
+        try {
+            // Use the correct endpoint
+            const response = await fetch(`/api/honeypot/types/${selectedType}/auth-details`);
+            const data = await response.json();
+            console.log("Loaded auth details:", data);
+            
+            // Set authentication data
+            if (data.authentication && data.authentication.allowed_users) {
+                authenticationData.allowed_users = data.authentication.allowed_users;
                 
-                // Set banner
-                const bannerField = document.getElementById('honeypot-banner');
-                if (bannerField && data.banner) {
-                    bannerField.value = data.banner;
+                // If we're on the auth step, update the UI
+                if (currentStep === 3) {
+                    renderCredentials();
                 }
-                
-                // Set authentication data
-                if (data.authentication && data.authentication.allowed_users) {
-                    authenticationData.allowed_users = data.authentication.allowed_users;
-                    
-                    // If we're on the auth step, update the UI
-                    if (currentStep === 3) {
-                        renderCredentials();
-                    }
-                }
-            })
-            .catch(error => {
-                console.error("Error loading authentication defaults:", error);
-                // Set some fallback defaults
-                authenticationData.allowed_users = [
-                    { username: "admin", password: "admin123" },
-                    { username: "root", password: "toor" },
-                    { username: "user", password: "password" }
-                ];
-            });
+            }
+        } catch (error) {
+            console.error("Error loading authentication defaults:", error);
+            // Set fallback defaults
+            authenticationData.allowed_users = [
+                { username: "admin", password: "admin123" },
+                { username: "root", password: "toor" },
+                { username: "user", password: "password" }
+            ];
+            
+            if (currentStep === 3) {
+                renderCredentials();
+            }
+        }
     });
 }
 
@@ -218,21 +215,69 @@ function setupFormValidation() {
  * Setup credential management for the authentication step
  */
 function setupCredentialManagement() {
-    // Add credential button
-    document.getElementById('add-credential-btn').addEventListener('click', function() {
+    const addBtn = document.getElementById('add-credential-btn');
+    addBtn.addEventListener('click', function handler(e) {
+        // Prevent double click/add
+        if (addBtn.disabled) return;
+        // Prevent adding if any existing credential is invalid
+        if (!validateAllCredentialInputs()) {
+            showNotification('Please fill in all existing credential fields correctly before adding new ones.', 'warning');
+            return;
+        }
         // Check if we've reached the maximum number of credentials
         if (authenticationData.allowed_users.length >= 20) {
             showNotification('Maximum number of credentials (20) reached', 'error');
             return;
         }
-        
+        // Disable button immediately to prevent double add
+        addBtn.disabled = true;
         // Add a new credential
         authenticationData.allowed_users.push({ username: "", password: "" });
         renderCredentials();
+        // Button will be re-enabled by updateAddCredentialButtonState after render
     });
-    
+
     // Initial rendering
     renderCredentials();
+}
+
+/**
+ * Enable/disable the add credential button based on validity and count
+ */
+function updateAddCredentialButtonState() {
+    const addBtn = document.getElementById('add-credential-btn');
+    if (!addBtn) return;
+    const container = document.getElementById('auth-credentials-container');
+    if (!container) {
+        addBtn.disabled = false;
+        return;
+    }
+    const count = authenticationData.allowed_users.length;
+    if (count >= 20 || !validateAllCredentialInputs()) {
+        addBtn.disabled = true;
+    } else {
+        addBtn.disabled = false;
+    }
+}
+
+/**
+ * Validate all credential input fields in the UI
+ * Returns true if all are valid, false otherwise
+ */
+function validateAllCredentialInputs() {
+    const container = document.getElementById('auth-credentials-container');
+    if (!container) return true;
+    let allValid = true;
+    container.querySelectorAll('input[data-field]').forEach(input => {
+        const value = input.value.trim();
+        if (value.length < 4 || value.length > 15) {
+            input.classList.add('border-red-500');
+            allValid = false;
+        } else {
+            input.classList.remove('border-red-500');
+        }
+    });
+    return allValid;
 }
 
 /**
@@ -255,18 +300,22 @@ function renderCredentials() {
             <div class="col-span-5">
                 <input type="text" 
                     class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent" 
-                    placeholder="Username" 
+                    placeholder="Username (4-15 chars)" 
                     value="${cred.username || ''}"
                     data-field="username"
-                    data-index="${index}">
+                    data-index="${index}"
+                    minlength="4"
+                    maxlength="15">
             </div>
             <div class="col-span-5">
                 <input type="text" 
                     class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-accent focus:border-transparent" 
-                    placeholder="Password" 
+                    placeholder="Password (4-15 chars)" 
                     value="${cred.password || ''}"
                     data-field="password"
-                    data-index="${index}">
+                    data-index="${index}"
+                    minlength="4"
+                    maxlength="15">
             </div>
             <div class="col-span-2 flex justify-end">
                 <button type="button" class="delete-credential-btn bg-dark-400 hover:bg-red-600 text-white p-1.5 rounded-md transition-colors" data-index="${index}">
@@ -285,6 +334,12 @@ function renderCredentials() {
                 const index = parseInt(this.dataset.index);
                 const field = this.dataset.field;
                 authenticationData.allowed_users[index][field] = this.value;
+                validateAllCredentialInputs();
+                updateAddCredentialButtonState();
+            });
+            input.addEventListener('input', function() {
+                validateAllCredentialInputs();
+                updateAddCredentialButtonState();
             });
         });
         
@@ -299,8 +354,12 @@ function renderCredentials() {
             }
             authenticationData.allowed_users.splice(index, 1);
             renderCredentials();
+            updateAddCredentialButtonState();
         });
     });
+
+    // Always update the add button state after rendering
+    updateAddCredentialButtonState();
 }
 
 /**
@@ -378,7 +437,7 @@ function updateSummary() {
 /**
  * Submit the honeypot creation form
  */
-function submitHoneypotForm() {
+async function submitHoneypotForm() {
     // Gather form data
     const honeypotType = document.getElementById('honeypot-type').value;
     const honeypotPort = document.getElementById('honeypot-port').value;
@@ -415,30 +474,12 @@ function submitHoneypotForm() {
         Creating...
     `;
     
-    // Submit to API
-    fetch('/api/honeypot', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => {
-                throw new Error(err.detail || 'Failed to create honeypot');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
+    try {
+        // Use the global HoneypotAPI utility
+        await HoneypotAPI.createHoneypot(formData);
         showNotification('Honeypot created successfully!', 'success');
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1500);
-    })
-    .catch(error => {
+        setTimeout(() => { window.location.href = '/'; }, 1500);
+    } catch (error) {
         console.error("Error creating honeypot:", error);
         showNotification(error.message || 'Failed to create honeypot', 'error');
         
@@ -450,7 +491,7 @@ function submitHoneypotForm() {
             </svg>
             Deploy Honeypot
         `;
-    });
+    }
 }
 
 // Export for usage in other files

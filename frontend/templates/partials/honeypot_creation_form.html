@@ -183,17 +183,73 @@
               </svg>
               Banner <span class="text-accent ml-1">*</span></label
             >
-            <textarea
-              id="honeypot-banner"
-              name="banner"
-              required
-              rows="3"
-              class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-4 py-3 focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
-              placeholder="Custom banner text for the honeypot"
-            ></textarea>
-            <p class="mt-2 text-sm text-gray-400">
-              Custom text that will be displayed to connecting clients
-            </p>
+            <div class="relative">
+              <textarea
+                id="honeypot-banner"
+                name="banner"
+                required
+                rows="3"
+                maxlength="300"
+                data-max-lines="3"
+                class="w-full bg-dark-300 border border-dark-400 text-white rounded-md px-4 py-3 focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                placeholder="Enter banner text that will be displayed to connecting clients"
+              ></textarea>
+              <div
+                class="absolute bottom-3 right-3 text-xs text-gray-400 flex space-x-3"
+              >
+                <span id="banner-line-counter">0/3 lines</span>
+                <span id="banner-char-counter">0/300 chars</span>
+              </div>
+            </div>
+
+            <!-- Warning indicators -->
+            <div
+              id="banner-warnings"
+              class="mt-2 text-xs text-yellow-500 hidden"
+            >
+              <div class="flex items-center">
+                <svg
+                  class="w-4 h-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <span id="banner-warning-text"
+                  >Consider adding security-related terms like "Unauthorized",
+                  "Access", or "Monitored"</span
+                >
+              </div>
+            </div>
+
+            <!-- Banner preview -->
+            <div class="mt-4">
+              <div class="flex justify-between items-center mb-2">
+                <label class="block text-sm font-medium text-gray-300"
+                  >Preview:</label
+                >
+                <button
+                  type="button"
+                  id="restore-default-banner"
+                  class="text-xs text-accent hover:text-accent-dark transition-colors"
+                >
+                  Restore Default
+                </button>
+              </div>
+              <div
+                id="banner-preview"
+                class="bg-dark-400 border border-dark-500 rounded-md p-3 text-xs font-mono overflow-auto max-h-32 text-green-400"
+              >
+                <!-- Preview content will be inserted here by JavaScript -->
+              </div>
+            </div>
+
             <div class="flex items-center mt-2 text-accent text-sm">
               <svg
                 class="w-4 h-4 mr-1"
@@ -210,6 +266,15 @@
               </svg>
               This will be used for all honeypots of this type. Leave unchanged
               if you want to use the default banner.
+            </div>
+
+            <!-- Input constraints info -->
+            <div class="mt-2 p-2 bg-dark-300 rounded-md">
+              <p class="text-xs text-gray-400">
+                <strong>Requirements:</strong> 20-300 characters, max 3 lines,
+                only printable ASCII and line breaks. Unsafe characters
+                (;|&$\<>`) will be removed.
+              </p>
             </div>
           </div>
 

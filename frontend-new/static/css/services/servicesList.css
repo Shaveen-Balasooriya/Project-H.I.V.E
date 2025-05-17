@@ -1,0 +1,299 @@
+/* Services page specific styling */
+
+/* Card grid layout */
+#services-container {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.5rem;
+}
+
+/* Responsive grid */
+@media (min-width: 640px) {
+    #services-container {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    #services-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    #services-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Service card styling */
+.service-card {
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 61, 76, 0.2);
+    max-width: 100%;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+                0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+/* Status-specific card styling - all with accent color as base */
+.service-card[data-status="running"] {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
+                0 0 8px rgba(16, 185, 129, 0.2), 
+                0 0 0 1px rgba(255, 61, 76, 0.2);
+}
+
+.service-card[data-status="created"] {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
+                0 0 8px rgba(245, 158, 11, 0.2), 
+                0 0 0 1px rgba(255, 61, 76, 0.2);
+}
+
+.service-card[data-status="exited"],
+.service-card[data-status="not found"] {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
+                0 0 8px rgba(239, 68, 68, 0.2), 
+                0 0 0 1px rgba(255, 61, 76, 0.2);
+}
+
+.service-card[data-status="running"]:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+                0 0 12px rgba(16, 185, 129, 0.3), 
+                0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+.service-card[data-status="created"]:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+                0 0 12px rgba(245, 158, 11, 0.3), 
+                0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+.service-card[data-status="exited"]:hover,
+.service-card[data-status="not found"]:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
+                0 0 12px rgba(239, 68, 68, 0.3), 
+                0 0 0 2px rgba(255, 61, 76, 0.5);
+}
+
+/* Card animations */
+.service-card {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Status pulse effects */
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); }
+}
+
+@keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+}
+
+@keyframes pulse-yellow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+}
+
+.service-card[data-status="running"] .service-status {
+    animation: pulse-green 2s infinite;
+}
+
+.service-card[data-status="exited"] .service-status,
+.service-card[data-status="not found"] .service-status {
+    animation: pulse-red 2s infinite;
+}
+
+.service-card[data-status="created"] .service-status {
+    animation: pulse-yellow 2s infinite;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+/* Button styles */
+.honeypot-action-btn,
+.service-action-btn {
+    transition: all 0.2s ease;
+    box-shadow: none;
+    min-width: 80px;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-shadow: none;
+    position: relative;
+    overflow: hidden;
+    color: white !important;
+    border-width: 2px !important;
+}
+
+.honeypot-action-btn:hover,
+.service-action-btn:hover {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.honeypot-action-btn:active,
+.service-action-btn:active {
+    transform: translateY(1px);
+}
+
+/* Button hover effect */
+.honeypot-action-btn::after,
+.service-action-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background-color: currentColor;
+    opacity: 0.1;
+    transition: height 0.2s ease;
+}
+
+.honeypot-action-btn:hover::after,
+.service-action-btn:hover::after {
+    height: 100%;
+}
+
+/* Button focus styles */
+.honeypot-action-btn:focus,
+.service-action-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Button-specific styles */
+.start-btn {
+    background-color: transparent !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    color: rgb(16, 185, 129) !important;
+}
+.start-btn:hover {
+    background-color: rgba(16, 185, 129, 0.8) !important;
+    border-color: rgba(16, 185, 129, 0.7) !important;
+    color: white !important;
+}
+
+.stop-btn {
+    background-color: transparent !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: rgb(239, 68, 68) !important;
+}
+.stop-btn:hover {
+    background-color: rgba(239, 68, 68, 0.8) !important;
+    border-color: rgba(239, 68, 68, 0.7) !important;
+    color: white !important;
+}
+
+.restart-btn {
+    background-color: transparent !important;
+    border-color: rgba(59, 130, 246, 0.6) !important;
+    color: rgb(59, 130, 246) !important;
+}
+.restart-btn:hover {
+    background-color: rgba(59, 130, 246, 0.8) !important;
+    border-color: rgba(59, 130, 246, 0.7) !important;
+    color: white !important;
+}
+
+.delete-btn {
+    background-color: transparent !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: rgb(239, 68, 68) !important;
+}
+.delete-btn:hover {
+    background-color: rgba(239, 68, 68, 0.8) !important;
+    border-color: rgba(239, 68, 68, 0.7) !important;
+    color: white !important;
+}
+
+/* Disabled button state */
+.honeypot-action-btn:disabled,
+.service-action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.honeypot-action-btn:disabled::after,
+.service-action-btn:disabled::after {
+    display: none;
+}
+
+/* New service button */
+.new-service-btn,
+.new-honeypot-btn {
+    position: relative;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    overflow: hidden;
+    color: white !important;
+    background-color: #FF3D4C !important;
+    border-color: rgba(255, 61, 76, 0.3) !important;
+    transition: all 0.3s ease, box-shadow 0.3s ease;
+}
+
+.new-service-btn:hover,
+.new-honeypot-btn:hover {
+    box-shadow: 0 0 15px 5px rgba(255, 61, 76, 0.5);
+}
+
+.new-service-btn:active,
+.new-honeypot-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 0 8px 2px rgba(255, 61, 76, 0.4);
+}
+
+/* Refresh Button */
+.refresh-btn {
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.refresh-btn:hover {
+    transform: none;
+    border-color: white !important;
+}
+
+.refresh-btn:active {
+    transform: translateY(1px);
+}
+
+/* Animation for notifications */
+#notification-container > div {
+    transition: transform 0.3s ease-out, opacity 0.3s ease;
+}
+
+/* Global Service Management buttons */
+.global-action-btn {
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.global-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

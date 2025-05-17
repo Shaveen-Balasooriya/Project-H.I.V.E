@@ -1,7 +1,10 @@
 authentication:
   allowed_users:
   - username: admin
-    password: admin123
-    
-banner: SSH-2.0-OpenSSH_8.9p1 Ubuntu-4ubuntu0.7
+    password: admin
+  - username: root
+    password: root
+  - username: user
+    password: user
+banner: SSH Hoenypot
 ssh_key_path: ssh_host_rsa_key
