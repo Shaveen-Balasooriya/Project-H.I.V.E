@@ -24,25 +24,25 @@ class ServiceUI {
         
         switch (type) {
             case 'success':
-                bgColor = 'bg-green-500/20';
-                textColor = 'text-green-400';
-                borderColor = 'border-green-500/30';
+                bgColor = 'bg-green-500';
+                textColor = 'text-white';
+                borderColor = 'border-green-500';
                 break;
             case 'error':
-                bgColor = 'bg-red-500/20';
-                textColor = 'text-red-400';
-                borderColor = 'border-red-500/30';
+                bgColor = 'bg-red-500';
+                textColor = 'text-white';
+                borderColor = 'border-red-500';
                 break;
             case 'warning':
-                bgColor = 'bg-yellow-500/20';
-                textColor = 'text-yellow-400';
-                borderColor = 'border-yellow-500/30';
+                bgColor = 'bg-yellow-500';
+                textColor = 'text-white';
+                borderColor = 'border-yellow-500';
                 break;
             case 'info':
             default:
-                bgColor = 'bg-blue-500/20';
-                textColor = 'text-blue-400';
-                borderColor = 'border-blue-500/30';
+                bgColor = 'bg-blue-500';
+                textColor = 'text-white';
+                borderColor = 'border-blue-500';
                 break;
         }
         

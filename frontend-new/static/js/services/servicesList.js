@@ -99,12 +99,13 @@ class ServicesList {
     
     /**
      * Refreshes the services list
+     * @returns {Promise} A promise that resolves when the refresh is complete
      */
     async refreshList() {
         // Prevent multiple simultaneous refreshes
         if (this.refreshing) {
             console.log("Refresh already in progress, skipping");
-            return;
+            return Promise.resolve();
         }
         
         this.refreshing = true;
@@ -114,15 +115,24 @@ class ServicesList {
             await this.fetchServices();
             this.renderServicesList();
             
-            // Show notification for successful refresh
-            if (window.serviceUI) {
+            // Update action button states after refresh
+            if (window.serviceActions) {
+                window.serviceActions.updateButtonStates();
+            }
+            
+            // Show notification for successful refresh, but only if not triggered by an action
+            // This prevents duplicate notifications
+            if (window.serviceUI && !window.serviceActions?.actionInProgress) {
                 window.serviceUI.showNotification('Services refreshed successfully', 'success', 3000);
             }
+            
+            this.refreshing = false;
+            return Promise.resolve();
         } catch (error) {
             console.error('Error refreshing services:', error);
             this.showError("Could not retrieve service status. Please try again.");
-        } finally {
             this.refreshing = false;
+            return Promise.reject(error);
         }
     }
     
@@ -240,49 +250,20 @@ class ServicesList {
                 statusLabel = 'Running';
                 break;
             case 'not found':
+            case 'exited':
                 statusClass = 'bg-red-500/20 text-red-400';
-                statusLabel = 'Not Found';
+                statusLabel = service.status.toLowerCase() === 'exited' ? 'Stopped' : 'Not Found';
                 break;
             case 'created':
-                statusClass = 'bg-blue-500/20 text-blue-400';
+                statusClass = 'bg-yellow-500/20 text-yellow-400';
                 statusLabel = 'Created';
                 break;
-            case 'exited':
             default:
-                statusClass = 'bg-yellow-500/20 text-yellow-400';
+                statusClass = 'bg-red-500/20 text-red-400';
                 statusLabel = 'Stopped';
         }
         
-        // Determine the type icon
-        let typeIcon;
-        switch (service.type) {
-            case 'data-storage':
-                typeIcon = `<svg class="w-5 h-5 mr-2 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
-                </svg>`;
-                break;
-            case 'messaging':
-                typeIcon = `<svg class="w-5 h-5 mr-2 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>`;
-                break;
-            case 'collector':
-                typeIcon = `<svg class="w-5 h-5 mr-2 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>`;
-                break;
-            case 'visualization':
-                typeIcon = `<svg class="w-5 h-5 mr-2 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>`;
-                break;
-            default:
-                typeIcon = `<svg class="w-5 h-5 mr-2 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                </svg>`;
-        }
-        
-        // Card content HTML - with status icons removed
+        // Card content HTML without type icons
         card.innerHTML = `
             <div class="p-5">
                 <div class="flex flex-wrap justify-between items-start mb-4">
@@ -296,7 +277,7 @@ class ServicesList {
                 
                 <div class="mb-4">
                     <div class="flex items-center text-sm text-white/80 mb-2">
-                        ${typeIcon}
+                        <span class="service-type-icon inline-block w-5 h-5 mr-2 text-accent"></span>
                         <span class="service-type">${service.type.charAt(0).toUpperCase() + service.type.slice(1)}</span>
                     </div>
                     <p class="text-white/70 mt-2">
@@ -305,6 +286,37 @@ class ServicesList {
                 </div>
             </div>
         `;
+        
+        // Add type icon using DOM manipulation instead of string interpolation
+        const iconContainer = card.querySelector('.service-type-icon');
+        if (iconContainer) {
+            switch (service.type) {
+                case 'data-storage':
+                    iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                    </svg>`;
+                    break;
+                case 'messaging':
+                    iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>`;
+                    break;
+                case 'collector':
+                    iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>`;
+                    break;
+                case 'visualization':
+                    iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>`;
+                    break;
+                default:
+                    iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                    </svg>`;
+            }
+        }
         
         return card;
     }

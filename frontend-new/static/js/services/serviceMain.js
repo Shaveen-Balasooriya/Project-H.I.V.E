@@ -5,6 +5,8 @@
 
 // Flag to prevent multiple simultaneous refreshes
 let isRefreshing = false;
+// Add a flag to track if initial load has happened
+let initialLoadComplete = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Services page initialized');
@@ -15,10 +17,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Set up on-load listeners to prevent infinite loop
-    if (window.servicesList) {
+    if (window.servicesList && !initialLoadComplete) {
         try {
+            // Set flags to prevent duplicate refreshes
             isRefreshing = true;
+            initialLoadComplete = true;
+            
+            // Single refresh attempt on page load
             await window.servicesList.refreshList();
+            
+            // Update button states after initial load
+            if (window.serviceActions) {
+                window.serviceActions.updateButtonStates();
+            }
+            
             isRefreshing = false;
         } catch (error) {
             console.error('Error loading initial services data:', error);
@@ -53,25 +65,25 @@ if (typeof ServiceUI === 'undefined') {
             
             switch (type) {
                 case 'success':
-                    bgColor = 'bg-green-500/20';
-                    textColor = 'text-green-400';
-                    borderColor = 'border-green-500/30';
+                    bgColor = 'bg-green-500';
+                    textColor = 'text-white';
+                    borderColor = 'border-green-500';
                     break;
                 case 'error':
-                    bgColor = 'bg-red-500/20';
-                    textColor = 'text-red-400';
-                    borderColor = 'border-red-500/30';
+                    bgColor = 'bg-red-500';
+                    textColor = 'text-white';
+                    borderColor = 'border-red-500';
                     break;
                 case 'warning':
-                    bgColor = 'bg-yellow-500/20';
-                    textColor = 'text-yellow-400';
-                    borderColor = 'border-yellow-500/30';
+                    bgColor = 'bg-yellow-500';
+                    textColor = 'text-white';
+                    borderColor = 'border-yellow-500';
                     break;
                 case 'info':
                 default:
-                    bgColor = 'bg-blue-500/20';
-                    textColor = 'text-blue-400';
-                    borderColor = 'border-blue-500/30';
+                    bgColor = 'bg-blue-500';
+                    textColor = 'text-white';
+                    borderColor = 'border-blue-500';
                     break;
             }
             

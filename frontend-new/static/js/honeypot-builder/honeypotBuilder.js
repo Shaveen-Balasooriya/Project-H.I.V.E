@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function() {
     portInput: document.getElementById("port"),
     portStatus: document.getElementById("port-status"),
     checkPortBtn: document.getElementById("check-port"),
-    formStatus: document.getElementById("form-status").querySelector("div"),
     deployBtn: document.getElementById("deploy-btn"),
     deployText: document.getElementById("deploy-text"),
     deploySpinner: document.getElementById("deploy-spinner"),

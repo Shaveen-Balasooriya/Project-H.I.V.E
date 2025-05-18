@@ -280,3 +280,14 @@ select {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Glowing button effect */
+.glow-button {
+  box-shadow: 0 0 8px rgba(255, 61, 76, 0.3);
+  transition: all 0.3s ease;
+}
+
+.glow-button:hover {
+  box-shadow: 0 0 20px rgba(255, 61, 76, 0.7);
+  transform: translateY(-2px);
+}

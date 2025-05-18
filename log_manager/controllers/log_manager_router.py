@@ -35,15 +35,6 @@ def _orchestrator(password: str | None = None) -> ServiceOrchestrator:
 def _err(detail: str, code: int = status.HTTP_400_BAD_REQUEST):
     raise HTTPException(status_code=code, detail=detail)
 
-def _dashboard_status() -> str:
-    try:
-        out = subprocess.check_output([
-            "podman", "inspect", "-f", "{{.State.Status}}", "hive-opensearch-dash"
-        ], text=True)
-        return out.strip()
-    except subprocess.CalledProcessError:
-        return "not found"
-
 # ───────────────────────────── endpoints ─────────────────────────────────────
 @router.post("/create", response_model=SimpleResponse)
 async def create_services(body: AdminPasswordBody):
@@ -102,6 +93,19 @@ async def delete_services():
         logger.exception("Delete failed")
         _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@router.post("/restart", response_model=SimpleResponse)
+async def restart_services():
+    orch = _orchestrator()
+    if orch.missing():
+        _err("Containers do not exist – create them first.")
+    try:
+        await run_in_threadpool(orch.restart_all)
+        return {"message": "Containers restarted successfully"}
+    except (PodmanError, ResourceError) as e:
+        logger.exception("Restart failed")
+        _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @router.get("/status", response_model=StatusResponse)
 async def status_services():
     orch = _orchestrator()
@@ -110,7 +114,7 @@ async def status_services():
         "open_search_node": s.get("hive-opensearch-node", "not found"),
         "nats_server":      s.get("hive-nats-server",    "not found"),
         "log_collector":    s.get("hive-log-collector",  "not found"),
-        "open_search_dashboard": _dashboard_status(),
+        "open_search_dashboard": s.get("hive-opensearch-dash", "not found"),
     }
 
 @router.get("/services", response_model=List[str])
@@ -118,6 +122,8 @@ async def list_running_services():
     orch = _orchestrator()
     running_map = orch._running_map()
     running = [name for name, is_run in running_map.items() if is_run]
-    if _dashboard_status() == "running":
+    if orch.opensearch.dashboard_status() == "running":
         running.append("hive-opensearch-dash")
+
     return running
+

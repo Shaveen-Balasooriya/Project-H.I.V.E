@@ -67,6 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       msgEl.classList.add('hidden');
 
+      // Show loading overlay
+      if (window.loadingOverlay) {
+        window.loadingOverlay.show('Deploying honeypot...');
+      }
+
       // Get form data
       const formData = new FormData(form);
       
@@ -133,6 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
             deployText.textContent = "DEPLOY HONEYPOT";
             deploySpinner.classList.add("hidden");
           }
+          
+          // Hide loading overlay on error
+          if (window.loadingOverlay) {
+            window.loadingOverlay.hide(true);
+          }
         }
       })
       .catch(() => {
@@ -146,6 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
           deployText.textContent = "DEPLOY HONEYPOT";
           deploySpinner.classList.add("hidden");
         }
+        
+        // Hide loading overlay on error
+        if (window.loadingOverlay) {
+          window.loadingOverlay.hide(true);
+        }
       });
     });
   }
@@ -158,5 +173,45 @@ document.addEventListener('DOMContentLoaded', () => {
       mobileMenu.classList.toggle('open');
       // Rest of the existing mobile menu code...
     });
+  }
+  
+  // Add global page transition handling
+  document.querySelectorAll('a').forEach(link => {
+    // Only handle internal links that aren't # or javascript: links
+    if (link.href && 
+        link.href.startsWith(window.location.origin) && 
+        !link.href.includes('#') && 
+        !link.href.startsWith('javascript:') &&
+        !link.classList.contains('no-loader')) {
+      
+      link.addEventListener('click', (e) => {
+        // Don't handle special function links
+        if (link.getAttribute('target') === '_blank' || 
+            link.getAttribute('download') || 
+            e.ctrlKey || e.metaKey) {
+          return;
+        }
+        
+        e.preventDefault();
+        
+        // Show loading overlay for page navigation
+        if (window.loadingOverlay) {
+          window.loadingOverlay.show('Loading page...');
+        }
+        
+        // Navigate after small delay to ensure loading overlay is visible
+        setTimeout(() => {
+          window.location.href = link.href;
+        }, 300);
+      });
+    }
+  });
+});
+
+// Listen for browser back/forward navigation
+window.addEventListener('beforeunload', () => {
+  // Show loading overlay when navigating away
+  if (window.loadingOverlay) {
+    window.loadingOverlay.show('Loading...');
   }
 });

@@ -267,7 +267,7 @@
   color: #000000;
 }
 
-/* Notification System */
+/* Notification System - Updated with solid background colors */
 .notification {
   position: fixed;
   bottom: 1rem;
@@ -276,6 +276,7 @@
   border-radius: 0.375rem;
   max-width: 24rem;
   z-index: 50;
+  color: white;
 }
 
 @keyframes slideIn {

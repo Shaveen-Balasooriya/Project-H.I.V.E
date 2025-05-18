@@ -26,63 +26,35 @@
     }
 }
 
-/* Service card styling */
+/* Service card styling - static with no hover effects */
 .service-card {
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 61, 76, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.8); /* White border with high opacity */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     max-width: 100%;
     min-width: 200px;
     display: flex;
     flex-direction: column;
 }
 
-.service-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
-                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
-                0 0 0 2px rgba(255, 61, 76, 0.5);
-}
-
-/* Status-specific card styling - all with accent color as base */
+/* Status-specific card styling - white borders with status color subtle effects */
 .service-card[data-status="running"] {
+    border-color: rgba(255, 255, 255, 0.8);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
-                0 0 8px rgba(16, 185, 129, 0.2), 
-                0 0 0 1px rgba(255, 61, 76, 0.2);
+                0 0 8px rgba(16, 185, 129, 0.2);
 }
 
 .service-card[data-status="created"] {
+    border-color: rgba(255, 255, 255, 0.8);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
-                0 0 8px rgba(245, 158, 11, 0.2), 
-                0 0 0 1px rgba(255, 61, 76, 0.2);
+                0 0 8px rgba(59, 130, 246, 0.2);
 }
 
 .service-card[data-status="exited"],
 .service-card[data-status="not found"] {
+    border-color: rgba(255, 255, 255, 0.8);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 
-                0 0 8px rgba(239, 68, 68, 0.2), 
-                0 0 0 1px rgba(255, 61, 76, 0.2);
-}
-
-.service-card[data-status="running"]:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
-                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
-                0 0 12px rgba(16, 185, 129, 0.3), 
-                0 0 0 2px rgba(255, 61, 76, 0.5);
-}
-
-.service-card[data-status="created"]:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
-                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
-                0 0 12px rgba(245, 158, 11, 0.3), 
-                0 0 0 2px rgba(255, 61, 76, 0.5);
-}
-
-.service-card[data-status="exited"]:hover,
-.service-card[data-status="not found"]:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 
-                0 4px 6px -2px rgba(0, 0, 0, 0.2), 
-                0 0 12px rgba(239, 68, 68, 0.3), 
-                0 0 0 2px rgba(255, 61, 76, 0.5);
+                0 0 8px rgba(245, 158, 11, 0.2);
 }
 
 /* Card animations */
@@ -95,7 +67,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Status pulse effects */
+/* Status pulse effects - updated with correct color values */
 @keyframes pulse-green {
     0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
     50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); }
@@ -111,11 +83,20 @@
     50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
 }
 
+@keyframes pulse-blue {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+}
+
+/* Status indicator animations - ensure consistent coloring with status */
 .service-card[data-status="running"] .service-status {
     animation: pulse-green 2s infinite;
 }
 
-.service-card[data-status="exited"] .service-status,
+.service-card[data-status="exited"] .service-status {
+    animation: pulse-red 2s infinite;
+}
+
 .service-card[data-status="not found"] .service-status {
     animation: pulse-red 2s infinite;
 }
@@ -211,12 +192,12 @@
 
 .restart-btn {
     background-color: transparent !important;
-    border-color: rgba(59, 130, 246, 0.6) !important;
-    color: rgb(59, 130, 246) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important; /* Changed from blue to green */
+    color: rgb(16, 185, 129) !important; /* Changed from blue to green */
 }
 .restart-btn:hover {
-    background-color: rgba(59, 130, 246, 0.8) !important;
-    border-color: rgba(59, 130, 246, 0.7) !important;
+    background-color: rgba(16, 185, 129, 0.8) !important; /* Changed from blue to green */
+    border-color: rgba(16, 185, 129, 0.7) !important; /* Changed from blue to green */
     color: white !important;
 }
 

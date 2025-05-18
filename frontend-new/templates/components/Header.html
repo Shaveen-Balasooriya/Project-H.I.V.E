@@ -25,9 +25,9 @@
     "
     class="container mx-auto px-6"
   >
-    <!-- Logo / Brand - Smaller size -->
+    <!-- Logo / Brand - Smaller size - Updated href to point to honeypots page -->
     <a
-      href="/"
+      href="/honeypots"
       style="
         display: flex;
         align-items: center;
@@ -46,7 +46,7 @@
           flex-direction: column;
           background: transparent;
           padding: 0;
-          margin: 0;
+          margin: 0 0 0 16px; /* Added left margin to create space */
           border: none;
         "
       >
@@ -95,7 +95,7 @@
           flex-shrink: 0;
           transform: translateZ(0);
         "
-        class="sm:mr-4 sm:order-first"
+        class="sm:mr-12 sm:order-first"
       >
         <img
           src="{{ url_for('static', filename='assets/images/logo.svg') }}"
@@ -162,27 +162,7 @@
             "
             onmouseover="this.style.opacity='0.8'; this.style.transform='translateY(-2px)'"
             onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
-            >SERVICES</a
-          >
-        </li>
-        <li style="margin: 0 1.25rem">
-          <a
-            href="/about"
-            style="
-              color: #ffffff;
-              text-decoration: none;
-              position: relative;
-              padding: 0.5rem 0.25rem;
-              font-weight: 500;
-              letter-spacing: 1px;
-              display: inline-block;
-              font-family: 'Iceland', sans-serif;
-              font-size: 1.125rem;
-              transition: all 0.2s ease;
-            "
-            onmouseover="this.style.opacity='0.8'; this.style.transform='translateY(-2px)'"
-            onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
-            >ABOUT</a
+            >SERVICE MANAGER</a
           >
         </li>
       </ul>
@@ -275,26 +255,7 @@
         "
         onmouseover="this.style.backgroundColor='rgba(255,61,76,0.1)'; this.style.paddingLeft='1.5rem'"
         onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='1rem'"
-        >SERVICES</a
-      >
-      <a
-        href="/about"
-        style="
-          display: block;
-          padding: 0.9rem 1rem;
-          color: #ffffff;
-          text-decoration: none;
-          border-radius: 6px;
-          margin: 0.25rem 0;
-          font-weight: 600;
-          font-family: 'Iceland', sans-serif;
-          font-size: 1.2rem;
-          letter-spacing: 1px;
-          transition: all 0.2s ease;
-        "
-        onmouseover="this.style.backgroundColor='rgba(255,61,76,0.1)'; this.style.paddingLeft='1.5rem'"
-        onmouseout="this.style.backgroundColor='transparent'; this.style.paddingLeft='1rem'"
-        >ABOUT</a
+        >SERVICE MANAGEMENT</a
       >
     </div>
   </div>

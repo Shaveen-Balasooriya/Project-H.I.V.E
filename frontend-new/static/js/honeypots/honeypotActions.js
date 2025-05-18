@@ -204,14 +204,14 @@ class HoneypotActions {
     
     switch (type) {
       case 'success':
-        typeClasses = 'bg-green-500/20 border border-green-500/30 text-green-400';
+        typeClasses = 'bg-green-500 border border-green-500 text-white';
         break;
       case 'error':
-        typeClasses = 'bg-red-500/20 border border-red-500/30 text-red-400';
+        typeClasses = 'bg-red-500 border border-red-500 text-white';
         break;
       case 'info':
       default:
-        typeClasses = 'bg-blue-500/20 border border-blue-500/30 text-blue-400';
+        typeClasses = 'bg-blue-500 border border-blue-500 text-white';
     }
     
     // Create notification element

@@ -49,6 +49,14 @@ class ServiceOrchestrator:
         for m in reversed(self._all):
             m.delete()
 
+    def restart_all(self) -> None:
+        for m in reversed(self._all):
+            if m.status() == "running":
+                m.stop()
+        time.sleep(2)
+        for m in self._all:
+            m.start()
+
     def any_exists(self) -> bool:
         return any(self._exists_map().values())
 
@@ -62,4 +70,7 @@ class ServiceOrchestrator:
         return [n for n, run in self._running_map().items() if not run]
 
     def status_report(self) -> Dict[str, str]:
-        return self._status_map()
+        report = self._status_map()
+        report["hive-opensearch-dash"] = self.opensearch.dashboard_status()
+        return report
+

@@ -99,15 +99,9 @@ class HoneypotFormHandler {
     const { typeSelect, portInput, cpuPeriod, cpuQuota, memoryLimit, memorySwapLimit, bannerTextarea } = this.elements;
     let isValid = true;
     
-    // Clear previous errors
-    const errorsContainer = document.getElementById('validation-errors-list');
-    if (errorsContainer) {
-      errorsContainer.innerHTML = '';
-    }
-    
     // Basic validation
     if (!typeSelect.value) {
-      this.addValidationError("Please select a honeypot type");
+      // Instead of adding to central error list, we focus on the field and highlight it
       HoneypotFormValidator.setInvalid(typeSelect, true);
       typeSelect.focus();
       isValid = false;
@@ -122,13 +116,8 @@ class HoneypotFormHandler {
       const portStatusVisible = portStatus && !portStatus.classList.contains('hidden');
       
       if (!portInput.value) {
-        // Only add to global errors if not already shown in port-status
-        if (!portStatusVisible) {
-          this.addValidationError("Please enter a port number");
-        } else {
-          // Ensure port-status is showing the correct message
-          HoneypotFormValidator.showStatus(portStatus, "Please enter a port number", "danger");
-        }
+        // Ensure port-status is showing the correct message
+        HoneypotFormValidator.showStatus(portStatus, "Please enter a port number", "danger");
         HoneypotFormValidator.setInvalid(portInput, true);
         if (isValid) {
           portInput.focus();
@@ -140,12 +129,8 @@ class HoneypotFormHandler {
       if (portInput.value) {
         const portResult = HoneypotFormValidator.validatePort(portInput.value);
         if (!portResult.isValid) {
-          // Only add to global error list if not already shown in port-status
-          if (!portStatusVisible) {
-            this.addValidationError(portResult.message);
-            // Show in port-status too, but only if it's not already visible
-            HoneypotFormValidator.showStatus(portStatus, portResult.message, "danger");
-          }
+          // Show in port-status
+          HoneypotFormValidator.showStatus(portStatus, portResult.message, "danger");
           HoneypotFormValidator.setInvalid(portInput, true);
           if (isValid) {
             portInput.focus();
@@ -159,7 +144,7 @@ class HoneypotFormHandler {
       
       // If port is still valid at this point but not checked with API
       if (isValid && portInput.value && !this.portValidated) {
-        this.addValidationError("Please check if the port is available");
+        HoneypotFormValidator.showStatus(portStatus, "Please check if the port is available", "warning");
         isValid = false;
       }
     }
@@ -294,9 +279,6 @@ class HoneypotFormHandler {
       }
     }
     
-    // Show or hide the validation errors container
-    this.toggleValidationErrorsDisplay(!isValid);
-    
     return isValid;
   }
   
@@ -305,13 +287,9 @@ class HoneypotFormHandler {
    * @param {string} message - Error message to display
    */
   addValidationError(message) {
-    const errorsContainer = document.getElementById('validation-errors-list');
-    if (!errorsContainer) return;
-    
-    const errorItem = document.createElement('li');
-    errorItem.className = 'text-sm';
-    errorItem.textContent = message;
-    errorsContainer.appendChild(errorItem);
+    // This function is now a no-op since we're not showing centralized errors
+    // but we keep it to avoid breaking existing code
+    console.log("Validation error (not shown to user):", message);
   }
   
   /**
@@ -319,14 +297,8 @@ class HoneypotFormHandler {
    * @param {boolean} show - Whether to show the container
    */
   toggleValidationErrorsDisplay(show) {
-    const container = document.getElementById('form-validation-errors');
-    if (!container) return;
-    
-    if (show) {
-      container.classList.remove('hidden');
-    } else {
-      container.classList.add('hidden');
-    }
+    // This function is now a no-op since we're not showing centralized errors
+    // but we keep it to avoid breaking existing code
   }
   
   /**
@@ -374,11 +346,11 @@ class HoneypotFormHandler {
     try {
       // Build payload from form
       const formData = new FormData(event.target);
-      
+    
       // Sanitize banner content again just to be sure
       const bannerContent = formData.get('banner') || "";
       const sanitizedBanner = BannerValidator.sanitize(bannerContent);
-      
+    
       const payload = {
         type: formData.get('type'),
         port: parseInt(formData.get('port')),
@@ -391,55 +363,52 @@ class HoneypotFormHandler {
           allowed_users: this.authHandler.getCredentials()
         }
       };
-      
-      // Skip port re-validation
-      
+    
       // Send to API
       const result = await ApiClient.createHoneypot(payload);
-      
-      // Show success and redirect
-      HoneypotFormValidator.showStatus(this.elements.formStatus, "Honeypot deployed successfully! Redirecting...", "success");
-      
-      // Redirect to honeypots page after short delay
+    
+      // ✅ Clear inline port errors
+      if (this.elements.portStatus) {
+        this.elements.portStatus.classList.add("hidden");
+        this.elements.portStatus.textContent = "";
+      }
+    
+      // ✅ Reset validation state
+      this.portValidated = false;
+      this.portValid = false;
+    
+      // ✅ Redirect to honeypots page
       setTimeout(() => {
         window.location.href = "/honeypots";
       }, 1500);
+    
     } catch (error) {
       console.error("Deploy error:", error);
-      HoneypotFormValidator.showStatus(
-        this.elements.formStatus, 
-        `Deployment failed: ${error.message || "Unknown error"}`, 
-        "danger"
-      );
       
+      // Show error via alert instead of status message
+      alert(`Deployment failed: ${error.message || "Unknown error"}`);
+    
       // Reset submit button
       this.setSubmitting(false);
-    }
+    }    
   }
   
   /**
    * Clear port status when port input changes
    */
   clearPortStatus() {
-    if (this.elements.portStatus) {
-      this.elements.portStatus.classList.add('hidden');
-      this.elements.portStatus.textContent = '';
-      
-      // Also clear any port validation messages from the global errors list
-      const errorsContainer = document.getElementById('validation-errors-list');
-      if (errorsContainer) {
-        const portErrorNodes = Array.from(errorsContainer.childNodes).filter(node => 
-          node.textContent && (
-            node.textContent.includes('port') || 
-            node.textContent.includes('Port')
-          )
-        );
-        portErrorNodes.forEach(node => node.remove());
-      }
+    // Only clear validation state if the form is NOT in the process of submitting
+    if (!this.formSubmittedSuccessfully) {
+      this.portValidated = false;
+      this.portValid = false;
     }
-    this.portValidated = false;
-    this.portValid = false;
-  }
+  
+    const portStatus = this.elements.portStatus;
+    if (portStatus) {
+      portStatus.classList.add("hidden");
+      portStatus.textContent = "";
+    }
+  }  
 }
 
 // Export for module usage

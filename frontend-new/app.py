@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -16,18 +16,73 @@ print(f"Using Log Manager API: {LOG_API}")  # Debug log for LOG_API
 # Initialize Flask app
 app = Flask(__name__)
 
+# Helper function to check if all required services are running
+def check_services_running():
+    """Check if all required services are running."""
+    try:
+        endpoint = f"{LOG_API}/services"
+        response = requests.get(endpoint)
+        
+        if not response.ok:
+            app.logger.error(f"Error checking running services: {response.text}")
+            return False, []
+        
+        running_services = response.json()
+        required_services = [
+            "hive-opensearch-node",
+            "hive-nats-server", 
+            "hive-log-collector",
+            "hive-opensearch-dash"
+        ]
+        
+        missing_services = [s for s in required_services if s not in running_services]
+        
+        if missing_services:
+            return False, {
+                "running": running_services,
+                "missing": missing_services
+            }
+        
+        return True, running_services
+    except Exception as e:
+        app.logger.error(f"Error checking running services: {str(e)}")
+        return False, []
+
 # Main page routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    """Redirect root URL to honeypots page"""
+    return redirect(url_for('honeypots'))
 
 @app.route('/honeypots')
 def honeypots():
+    # Check if all required services are running
+    services_running, services_info = check_services_running()
+    
+    if not services_running:
+        # Render a template with information about missing services
+        return render_template(
+            'pages/services_required.html', 
+            services_info=services_info,
+            redirect_to='/honeypots'
+        )
+    
     return render_template('pages/honeypots.html')
 
 @app.route('/honeypot-builder')
 def honeypot_builder():
-    # Check honeypot limits - hard-coded to 5 maximum honeypots
+    # First check services
+    services_running, services_info = check_services_running()
+    
+    if not services_running:
+        # Render a template with information about missing services
+        return render_template(
+            'pages/services_required.html', 
+            services_info=services_info,
+            redirect_to='/honeypot-builder'
+        )
+    
+    # Then check honeypot limits - hard-coded to 5 maximum honeypots
     try:
         # Get current honeypot count
         honeypots_response = requests.get(f"{HONEYPOT_API}/")
@@ -390,6 +445,57 @@ def delete_services():
     except Exception as e:
         app.logger.error(f"Error deleting services at {LOG_API}/delete: {str(e)}")
         return jsonify({"message": "Services deleted (mock response)"}), 200
+
+@app.route('/api/service/restart', methods=['POST'])
+def restart_services():
+    """Proxy request to restart all services."""
+    try:
+        app.logger.info("Restarting all services")
+        
+        # Use LOG_API directly from environment  
+        endpoint = f"{LOG_API}/restart"
+        app.logger.info(f"LOG_API from env: {LOG_API}")
+        app.logger.info(f"Sending restart request to: {endpoint}")
+        
+        response = requests.post(endpoint)
+        app.logger.info(f"Restart services API response: {response.status_code}")
+        
+        if not response.ok:
+            error_content = response.text
+            app.logger.error(f"Error restarting services: {error_content}")
+            try:
+                error_json = response.json()
+                return jsonify(error_json), response.status_code
+            except:
+                return jsonify({"error": error_content}), response.status_code
+        
+        return response.json(), response.status_code
+    except Exception as e:
+        app.logger.error(f"Error restarting services at {LOG_API}/restart: {str(e)}")
+        return jsonify({"message": "Services restarted (mock response)"}), 200
+
+# Add new API endpoint to check running services
+@app.route('/api/service/list', methods=['GET'])
+def get_running_services():
+    """Proxy request to get list of running services from the log manager."""
+    try:
+        endpoint = f"{LOG_API}/services"
+        app.logger.info(f"LOG_API from env: {LOG_API}")
+        app.logger.info(f"Accessing services list at: {endpoint}")
+        
+        response = requests.get(endpoint)
+        app.logger.info(f"Services list API response: {response.status_code}")
+        
+        if response.ok:
+            data = response.json()
+            app.logger.debug(f"Received services list: {data}")
+            return jsonify(data), 200
+        else:
+            app.logger.error(f"Error from services list API: {response.text}")
+            return jsonify([]), 200  # Return empty list as fallback
+    except Exception as e:
+        app.logger.error(f"Error accessing services list at {LOG_API}/services: {str(e)}")
+        return jsonify([]), 200  # Return empty list for development/error cases
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, reload=True)

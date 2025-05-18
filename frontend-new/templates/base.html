@@ -54,12 +54,21 @@
       rel="stylesheet"
     />
 
+    <!-- Loading overlay CSS -->
+    <link
+      href="{{ url_for('static', filename='css/loading-overlay.css') }}"
+      rel="stylesheet"
+    />
+
     <!-- Page-specific CSS -->
     {% block extra_head %}{% endblock %}
   </head>
   <body class="bg-primary text-secondary font-sans page-container">
     <!-- Header -->
     {% include 'components/Header.html' %}
+
+    <!-- Include the loading overlay component -->
+    {% include 'components/LoadingOverlay.html' %}
 
     <!-- Main content with consistent spacing -->
     <main id="main-content" class="page-content">
@@ -71,6 +80,9 @@
 
     <!-- Global Scripts -->
     <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+
+    <!-- Loading overlay script -->
+    <script src="{{ url_for('static', filename='js/loadingOverlay.js') }}"></script>
 
     <!-- Page-specific Scripts -->
     {% block scripts %}{% endblock %}

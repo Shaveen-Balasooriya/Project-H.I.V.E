@@ -8,50 +8,8 @@
   </p>
 </div>
 
-<!-- Form Status Messages -->
-<div
-  id="form-status"
-  class="hidden rounded-lg border border-white/10 overflow-hidden transition-all"
->
-  <div class="px-4 py-3 flex items-center gap-3">
-    <!-- FormValidator will insert message here -->
-  </div>
-</div>
-
-<!-- Updated Form Actions with centralized error display -->
+<!-- Updated Form Actions without any form status messages -->
 <div class="mt-10">
-  <!-- Centralized validation errors container -->
-  <div class="form-errors-container">
-    <div
-      id="form-validation-errors"
-      class="hidden bg-danger/20 text-white p-4 rounded border border-danger/30 mb-4"
-    >
-      <h4 class="font-bold flex items-center mb-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 mr-1 text-danger"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        Please Fix The Following Issues:
-      </h4>
-      <ul id="validation-errors-list" class="list-disc list-inside space-y-1">
-        <!-- Validation error items will be inserted here -->
-      </ul>
-    </div>
-  </div>
-
-  <!-- Form status messages (success/failure) -->
-  <div id="form-status" class="hidden mb-6">
-    <div class="p-4 rounded border"></div>
-  </div>
-
   <!-- Form actions with enhanced deploy button - hardcoded accent color -->
   <div class="flex flex-col-reverse sm:flex-row justify-between gap-4">
     <!-- Cancel button with consistent border width to prevent layout shifts -->

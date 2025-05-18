@@ -30,61 +30,55 @@
 <!-- Main services content -->
 <section class="py-6 px-4 sm:px-6 lg:px-8">
   <div class="max-w-7xl mx-auto">
-    <!-- Control bar with actions -->
-    <div
-      class="control-bar mb-8 bg-black/30 border border-accent/10 rounded-lg p-5"
-    >
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h3 class="text-lg text-white font-display">Service Overview</h3>
-          <p class="text-white/70 text-sm">
-            View and manage your core system services
-          </p>
-        </div>
-
-        <!-- Right side: Actions -->
-        <div class="flex items-center gap-3">
-          <!-- Refresh button -->
-          <button
-            id="refresh-services"
-            class="refresh-btn flex items-center px-4 py-2 bg-black/60 border border-white/30 rounded text-white hover:bg-black/70 transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            Refresh
-          </button>
-
-          <!-- Create new service button -->
-          <button
-            id="create-service-btn"
-            class="new-honeypot-btn flex items-center px-5 py-2 text-white rounded-md font-medium"
-          >
-            New Service
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Global Service Management Panel -->
+    <!-- Global Service Management Panel - Now with description and organized buttons -->
     <div class="mb-8 bg-black/30 border border-accent/10 rounded-lg p-5">
-      <h3 class="text-lg text-white font-display mb-4">Service Management</h3>
-      <p class="text-white/70 mb-4">
-        All services must be managed together. Use these controls to manage all
-        services at once.
-      </p>
-      <div class="flex flex-wrap gap-3">
+      <!-- Description section - removed heading, increased text size -->
+      <div class="mb-6">
+        <p class="text-white/70 text-base">
+          These interconnected services work together to collect, process, and
+          analyze data from your honeypots. OpenSearch Node stores the data,
+          NATS Server handles messaging, Log Collector processes incoming logs,
+          and OpenSearch Dashboard provides visualization.
+        </p>
+      </div>
+
+      <!-- Control buttons (top row) -->
+      <div
+        class="flex flex-wrap items-center gap-3 justify-end mb-4 border-b border-accent/10 pb-4"
+      >
+        <!-- Refresh button -->
+        <button
+          id="refresh-services"
+          class="refresh-btn flex items-center px-4 py-2 bg-black/60 border border-white/30 rounded text-white hover:bg-black/70 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Refresh
+        </button>
+
+        <!-- Create new service button -->
+        <button
+          id="create-service-btn"
+          class="new-honeypot-btn flex items-center px-5 py-2 text-white rounded-md font-medium"
+        >
+          New Service
+        </button>
+      </div>
+
+      <!-- Service action buttons (bottom row) -->
+      <div class="flex flex-wrap items-center gap-3 justify-center">
         <button
           id="start-all-btn"
           class="honeypot-action-btn start-btn px-4 py-2 border rounded flex items-center"

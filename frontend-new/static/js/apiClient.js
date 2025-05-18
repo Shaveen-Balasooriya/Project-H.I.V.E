@@ -281,6 +281,28 @@ class ApiClient {
     
     return result;
   }
+  
+  /**
+   * Restarts all services
+   * @returns {Promise<Object>} Restart operation result
+   */
+  static async restartServices() {
+    const response = await fetch('/api/service/restart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      const errorMsg = result.detail || result.error || "Failed to restart services";
+      throw new Error(errorMsg);
+    }
+    
+    return result;
+  }
 }
 
 // Export for module usage
