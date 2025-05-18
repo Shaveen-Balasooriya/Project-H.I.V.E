@@ -1,24 +1,14 @@
 from __future__ import annotations
-
-"""Honeypot container orchestration via **Podman CLI**.
-This is the *authoritative* implementation used by the controller.
-Safety additions:
-• Cannot **delete** while container status == *running*.
-• Blocks **stop / delete** when the host‑port has *established* inbound
-  connections – raises :class:`~honeypot_manager.util.exceptions.HoneypotActiveConnectionsError`.
-"""
-
-import json
-import logging
 import os
+import json
 import socket
-import subprocess
+import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
-from common.helpers import CONFIG, ImageManager, NetworkManager, PodmanError, PodmanRunner
+from common.helpers import CONFIG, PodmanRunner, ImageManager, NetworkManager
 from honeypot_manager.util.exceptions import (
     HoneypotActiveConnectionsError,
     HoneypotContainerError,
@@ -32,14 +22,13 @@ from honeypot_manager.util.exceptions import (
 
 logger = logging.getLogger("hive.honeypot")
 
-###############################################################################
-# YAML config loader (unchanged)
-###############################################################################
 
 class HoneypotConfig:
-    _CONFIG_PATH = (
-        Path(__file__).resolve().parent.parent / "config" / "honeypot_configs.yaml"
-    )
+    """
+    Load and cache honeypot-type configurations from a YAML file.
+    Falls back to defaults if the file is missing or malformed.
+    """
+    _CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "honeypot_configs.yaml"
     _DEFAULTS: Dict[str, Any] = {
         "ssh": {"ports": {"22/tcp": "honeypot_port"}},
         "ftp": {
@@ -47,7 +36,7 @@ class HoneypotConfig:
             "passive_ports": [60000, 60100],
         },
     }
-    _cache: Dict[str, Any] | None = None
+    _cache: Optional[Dict[str, Any]] = None
     _mtime: float = 0.0
 
     @classmethod
@@ -66,13 +55,12 @@ class HoneypotConfig:
             cls._cache = cls._DEFAULTS
         return cls._cache
 
-    # convenience wrappers ------------------------------------------------
     @classmethod
     def get(cls, t: str) -> Dict[str, Any]:
         cfg = cls.load()
         if t not in cfg:
             raise HoneypotTypeNotFoundError(f"Unknown honeypot type '{t}'")
-        return cfg[t]
+        return cfg[t] or {}
 
     @classmethod
     def exists(cls, t: str) -> bool:
@@ -82,111 +70,70 @@ class HoneypotConfig:
     def types(cls) -> List[str]:
         return list(cls.load().keys())
 
-###############################################################################
-# Runtime manager
-###############################################################################
 
 class HoneypotManager:
-    """Manage a *single* honeypot container via Podman CLI."""
+    """
+    Manage a single honeypot container via Podman CLI.
+    """
 
     BASE_DIR = Path(__file__).resolve().parent.parent
-    
-    # Hard-coded NATS configuration values
     NATS_URL = "nats://hive-nats-server:4222"
     NATS_STREAM = "honeypot"
     NATS_SUBJECT = "honeypot.logs"
 
-    def __init__(self):
-        self.runner = PodmanRunner()
-        self.net_mgr = NetworkManager(self.runner)
-        self.img_mgr = ImageManager(self.runner)
+    def __init__(
+        self,
+        runner: PodmanRunner | None = None,
+        img_mgr: ImageManager | None = None,
+        net_mgr: NetworkManager | None = None,
+    ):
+        self.runner = runner or PodmanRunner()
+        self.img_mgr = img_mgr or ImageManager(self.runner)
+        self.net_mgr = net_mgr or NetworkManager(self.runner)
+        self.reset_metadata()
 
-        # Populated later -------------------------------------------------
-        self.honeypot_id: Optional[str] = None
-        self.honeypot_name: Optional[str] = None
-        self.honeypot_port: Optional[int] = None
-        self.honeypot_status: Optional[str] = None
-        self.honeypot_type: Optional[str] = None
-        self.honeypot_image: Optional[str] = None
+    def reset_metadata(self) -> None:
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
+        self.port: Optional[int] = None
+        self.status: Optional[str] = None
+        self.image: Optional[str] = None
 
-    def update_honeypot_config(self, honeypot_type: str, authentication: Optional[Dict[str, Any]] = None, 
-                              banner: Optional[str] = None) -> bool:
-        """Update the config.yaml file for the specified honeypot type with new authentication and banner.
-        
-        Args:
-            honeypot_type: The type of honeypot (e.g., 'ssh', 'ftp')
-            authentication: Dictionary containing authentication details with allowed_users
-            banner: String with the banner text
-        
-        Returns:
-            bool: True if update was successful
-            
-        Raises:
-            FileNotFoundError: If the config file doesn't exist
-            yaml.YAMLError: If there's an error parsing the YAML file
-        """
-        config_path = self.BASE_DIR / "honeypots" / honeypot_type / "config.yaml"
-        
-        if not config_path.exists():
-            logger.error(f"Config file for {honeypot_type} not found at {config_path}")
-            raise FileNotFoundError(f"Config file for {honeypot_type} not found")
-        
+    @staticmethod
+    def _validate_port(port: int) -> None:
+        if not 1 <= port <= 65535:
+            raise ValueError(f"Port {port} out of range (1–65535)")
+        if port < 1024:
+            raise HoneypotPrivilegedPortError(f"Port {port} requires root privileges")
+
+    @staticmethod
+    def _format_memory(value: Union[int, str]) -> str:
+        if isinstance(value, int):
+            return f"{value}m"
+        if isinstance(value, str) and value.isdigit():
+            return f"{value}m"
+        return str(value)
+
+    def update_honeypot_config(
+        self,
+        honeypot_type: str,
+        authentication: Optional[Dict[str, Any]] = None,
+        banner: Optional[str] = None,
+    ) -> None:
+        cfg_path = self.BASE_DIR / "honeypots" / honeypot_type / "config.yaml"
+        if not cfg_path.exists():
+            raise FileNotFoundError(f"Config {cfg_path} not found")
         try:
-            # Load existing configuration
-            with open(config_path, 'r') as file:
-                config = yaml.safe_load(file) or {}
+            cfg = yaml.safe_load(cfg_path.read_text()) or {}
         except yaml.YAMLError as exc:
-            logger.error(f"Error parsing YAML file: {exc}")
-            raise
-        
-        # Update authentication if provided, ensuring proper format
-        if authentication:
-            # Make sure authentication has proper structure
-            if 'allowed_users' not in authentication:
-                # If authentication was passed without the allowed_users key, wrap it
-                config['authentication'] = {'allowed_users': []}
-                
-                # Check if the passed data is already a list of users
-                if isinstance(authentication, list):
-                    config['authentication']['allowed_users'] = authentication
-                else:
-                    # If it's properly structured with allowed_users
-                    config['authentication'] = authentication
-            else:
-                # The structure is already correct
-                config['authentication'] = authentication
-                
-            # Ensure username appears before password for each user
-            # by creating a new list with properly ordered dictionaries
-            if 'allowed_users' in config['authentication']:
-                ordered_users = []
-                for user in config['authentication']['allowed_users']:
-                    # Create an ordered dictionary with username first, then password
-                    ordered_user = {}
-                    if 'username' in user:
-                        ordered_user['username'] = user['username']
-                    if 'password' in user:
-                        ordered_user['password'] = user['password']
-                    ordered_users.append(ordered_user)
-                config['authentication']['allowed_users'] = ordered_users
-            
-        # Update banner if provided
+            raise HoneypotError(f"Invalid YAML in {cfg_path}: {exc}")
+        if authentication is not None:
+            cfg["authentication"] = authentication
         if banner is not None:
-            config['banner'] = banner
-            
-        try:
-            # Write updated configuration back to file with proper formatting
-            with open(config_path, 'w') as file:
-                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
-            logger.info(f"Updated configuration for {honeypot_type} honeypot")
-            return True
-        except Exception as exc:
-            logger.error(f"Error writing updated configuration: {exc}")
-            raise
-            
-    # ------------------------------------------------------------------
-    # public API – creation
-    # ------------------------------------------------------------------
+            cfg["banner"] = banner
+        cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+
     def create_honeypot(
         self,
         *,
@@ -194,339 +141,174 @@ class HoneypotManager:
         honeypot_port: int,
         honeypot_cpu_limit: int = 100_000,
         honeypot_cpu_quota: int = 50_000,
-        honeypot_memory_limit: str = "512m",
-        honeypot_memory_swap_limit: str = "512m",
+        honeypot_memory_limit: Union[int, str] = "512m",
+        honeypot_memory_swap_limit: Union[int, str] = "512m",
         authentication: Optional[Dict[str, Any]] = None,
         banner: Optional[str] = None,
-    ) -> bool:
-        """Build image (if needed) & create a *stopped* container."""
-        # 1) validations --------------------------------------------------
+    ) -> None:
+        # 1) validations
         if not HoneypotConfig.exists(honeypot_type):
             raise HoneypotTypeNotFoundError(honeypot_type)
         self._validate_port(honeypot_port)
-        
-        # Check if port is already being used by another honeypot
         if self.is_port_in_use(honeypot_port):
-            raise HoneypotPortInUseError(f"Port {honeypot_port} is already in use by another honeypot or service")
-            
-        self.net_mgr.ensure_exists()
+            raise HoneypotPortInUseError(f"Port {honeypot_port} is already in use")
 
-        self.honeypot_type = honeypot_type
-        self.honeypot_port = honeypot_port
-        self.honeypot_name = f"hive-{honeypot_type}-{honeypot_port}"
-        self.honeypot_image = f"hive-{honeypot_type}-image"
+        # 2) prepare metadata and network
+        self.net_mgr.ensure_exists(CONFIG.network_name)
+        self.type = honeypot_type
+        self.port = honeypot_port
+        self.name = f"hive-{honeypot_type}-{honeypot_port}"
+        self.image = f"hive-{honeypot_type}-image"
 
-        honeypot_dir = self.BASE_DIR / "honeypots" / honeypot_type
-        if not honeypot_dir.exists():
-            raise FileNotFoundError(honeypot_dir)
-            
-        # 1.5) Update configuration if authentication or banner provided
-        if authentication or banner is not None:
-            try:
-                self.update_honeypot_config(honeypot_type, authentication, banner)
-            except Exception as exc:
-                raise HoneypotError(f"Failed to update honeypot configuration: {exc}")
+        # 3) update YAML if needed
+        if authentication or banner:
+            self.update_honeypot_config(honeypot_type, authentication, banner)
 
-        # 2) build image if absent ---------------------------------------
+        # 4) build image
+        hp_dir = self.BASE_DIR / "honeypots" / honeypot_type
         try:
-            self.img_mgr.ensure_built(
-                tag=self.honeypot_image, dockerfile_dir=honeypot_dir
-            )
-        except (PodmanError, OSError) as exc:
-            raise HoneypotImageError(str(exc)) from exc
+            self.img_mgr.ensure_built(self.image, hp_dir)
+        except Exception as exc:
+            raise HoneypotImageError(f"Image build failed: {exc}") from exc
 
-        # 3) compose CLI args -------------------------------------------
+        # 5) assemble CLI args safely
         cfg = HoneypotConfig.get(honeypot_type)
-        ports_cli = self._compose_port_args(cfg)
-        vols_cli = self._compose_volume_args(cfg, honeypot_dir)
+        # guard against None in config
+        ports_cfg = cfg.get("ports") or {}
+        passive_cfg = cfg.get("passive_ports") or []
+        ports: List[str] = []
+        for spec in ports_cfg:
+            cont = spec.split("/")[0]
+            ports.extend(["--publish", f"{self.port}:{cont}"])
+        for p in passive_cfg:
+            ports.extend(["--publish", f"{p}:{p}"])
 
-        # Environment variables for the container - using hard-coded values
-        env_vars = [
+        vols = ["--volume", f"{hp_dir}:/app/config:ro"]
+
+        envs = [
             "-e", f"NATS_URL={self.NATS_URL}",
             "-e", f"NATS_STREAM={self.NATS_STREAM}",
             "-e", f"NATS_SUBJECT={self.NATS_SUBJECT}",
-            "-e", f"HONEYPOT_TYPE={honeypot_type}"
-        ]
+            "-e", f"HONEYPOT_TYPE={honeypot_type}",
+        ] or []
 
-        create_cmd = [
-            "podman",
-            "create",
-            "--name",
-            self.honeypot_name,
-            "--hostname",
-            self.honeypot_name,
-            "--network",
-            CONFIG.network_name,
-            "--network-alias",
-            self.honeypot_name,
-            "--label",
-            "service=hive-honeypot-manager",
-            "--label",
-            f"hive.type={honeypot_type}",
-            "--label",
-            f"hive.port={honeypot_port}",
-            "--cpu-period",
-            str(honeypot_cpu_limit),
-            "--cpu-quota",
-            str(honeypot_cpu_quota),
-            "--memory",
-            honeypot_memory_limit,
-            "--memory-swap",
-            honeypot_memory_swap_limit,
-            "--security-opt",
-            "no-new-privileges",
-            *env_vars,
-            *ports_cli,
-            *vols_cli,
-            self.honeypot_image,
-        ]
+        cpu = ["--cpu-period", str(honeypot_cpu_limit), "--cpu-quota", str(honeypot_cpu_quota)]
+        mem = ["--memory", self._format_memory(honeypot_memory_limit), "--memory-swap", self._format_memory(honeypot_memory_swap_limit)]
 
-        # 4) run create ---------------------------------------------------
-        try:
-            self.runner.run(create_cmd)
-        except PodmanError as exc:
-            if "already exists" in str(exc):
-                raise HoneypotExistsError(self.honeypot_name) from exc
-            raise HoneypotContainerError(str(exc)) from exc
-
-        # 5) store metadata ---------------------------------------------
-        self.honeypot_id = self.runner.run(
-            ["podman", "inspect", "-f", "{{.Id}}", self.honeypot_name],
-            return_output=True,
+        # debug logging
+        logger.debug(
+            "create_honeypot args -> cpu: %s, mem: %s, envs: %s, ports: %s, vols: %s",
+            cpu, mem, envs, ports, vols
         )
-        self.honeypot_status = "configured"
-        logger.info("[✓] Created honeypot %s", self.honeypot_name)
-        return True
 
-    # ------------------------------------------------------------------
-    # public API – lifecycle
-    # ------------------------------------------------------------------
-    def start_honeypot(self) -> bool:
-        if self.honeypot_status == "running":
-            raise HoneypotContainerError(f"Honeypot '{self.honeypot_name}' is already running")
-        return self._simple_lifecycle("start")
+        cmd: List[str] = [
+            "podman", "create",
+            "--restart", "always",
+            "--name", self.name,
+            "--hostname", self.name,
+            "--network", CONFIG.network_name,
+            "--label", "service=hive-honeypot-manager",
+            f"--label=hive.type={honeypot_type}",
+            f"--label=hive.port={honeypot_port}",
+        ]
+        # extend in steps to avoid any NoneType unpack
+        if isinstance(cpu, list): cmd.extend(cpu)
+        if isinstance(mem, list): cmd.extend(mem)
+        cmd.extend(["--security-opt", "no-new-privileges"])
+        if isinstance(envs, list): cmd.extend(envs)
+        if isinstance(ports, list): cmd.extend(ports)
+        if isinstance(vols, list): cmd.extend(vols)
+        cmd.append(self.image)
 
-    def stop_honeypot(self) -> bool:
-        if self.honeypot_status == "stopped" or self.honeypot_status == "exited":
-            raise HoneypotContainerError(f"Honeypot '{self.honeypot_name}' is already stopped")
-        return self._simple_lifecycle("stop")
-
-    def restart_honeypot(self) -> bool:
-        if self.honeypot_status != "running":
-            raise HoneypotContainerError(f"Cannot restart honeypot '{self.honeypot_name}' because it's not running")
-        return self._simple_lifecycle("restart")
-
-    def delete_honeypot(self) -> bool:
-        if self.honeypot_status == "running":  # guard 1
-            raise HoneypotContainerError("Cannot delete a running honeypot – stop it first")
-        return self._simple_lifecycle("rm", extra=["-f"])
-
-    # ------------------------------------------------------------------
-    # public API – inspect
-    # ------------------------------------------------------------------
-    def get_honeypot_details(self, identifier: str) -> "HoneypotManager | None":
-        try:
-            out = self.runner.run(["podman", "inspect", identifier, "--format", "json"], return_output=True)
-        except PodmanError as exc:
-            error_msg = str(exc).lower()
-            if "no such object" in error_msg or "no such container" in error_msg:
-                # Instead of raising an error, return None to indicate not found
-                logger.info(f"Honeypot '{identifier}' not found")
-                return None
-            raise HoneypotContainerError(f"Failed to inspect honeypot: {exc}")
-        except Exception as exc:
-            raise HoneypotContainerError(f"Failed to inspect honeypot: {exc}")
-            
-        try:
-            data = json.loads(out)[0]
-            self.honeypot_id = data["Id"]
-            self.honeypot_name = data["Name"].lstrip("/")
-            self.honeypot_status = data["State"].get("Status")
-            labels = data["Config"].get("Labels", {}) or {}
-            self.honeypot_type = labels.get("hive.type", "unknown")
-            self.honeypot_port = int(labels.get("hive.port", 0))
-            self.honeypot_image = data["Config"].get("Image")
-            return self
-        except (IndexError, KeyError, ValueError) as exc:
-            logger.error("Failed to parse container info: %s", exc)
-            raise HoneypotContainerError(f"Failed to parse honeypot information: {exc}")
-
-    # ------------------------------------------------------------------
-    # utilities
-    # ------------------------------------------------------------------
-    @staticmethod
-    def get_available_honeypot_types() -> List[str]:
-        return HoneypotConfig.types()
-
-    # ------------------------ internal helpers ------------------------ #
-    @staticmethod
-    def _validate_port(port: int):
-        if not 1 <= port <= 65535:
-            raise ValueError("Port out of range 1‑65535")
-        if port < 1024 and os.geteuid() != 0:
-            raise HoneypotPrivilegedPortError(port)
-
-    def _compose_port_args(self, cfg: Dict[str, Any]) -> List[str]:
-        args: List[str] = []
-        mapping = {}
-        for container_p, _ in (cfg.get("ports") or {}).items():
-            mapping[container_p] = self.honeypot_port
-        passive = cfg.get("passive_ports")
-        if passive and isinstance(passive, list) and len(passive) == 2:
-            start, end = passive
-            for p in range(start, end + 1):
-                mapping[f"{p}/tcp"] = p
-        for c, h in mapping.items():
-            args += ["-p", f"{h}:{c}"]
-        return args
-
-    def _compose_volume_args(self, cfg: Dict[str, Any], hp_dir: Path) -> List[str]:
-        args: List[str] = []
-        cfg_path = hp_dir / "config.yaml"
-        if cfg_path.exists():
-            args += ["-v", f"{cfg_path}:/app/config.yaml:Z,ro"]
-        for vol in cfg.get("volumes", []):
-            host_dir = hp_dir / vol
-            host_dir.mkdir(parents=True, exist_ok=True)
-            args += ["-v", f"{host_dir}:/app/{vol}:Z,rw"]
-        return args
-
-    # -------- lifecycle backend -------------------------------------- #
-    def _port_has_established_connections(self) -> bool:
-        """Return True if ESTABLISHED sessions exist on honeypot's host‑port."""
-        if not self.honeypot_port:
-            return False
-        # 1) Is anything listening at all?
-        try:
-            with socket.create_connection(("127.0.0.1", self.honeypot_port), timeout=0.3):
-                pass
-        except (ConnectionRefusedError, OSError):
-            return False  # nothing bound
-        # 2) Check for *established* sessions via `ss`.
-        try:
-            out = subprocess.check_output(
-                ["ss", "-Htan", f"sport = :{self.honeypot_port}"]
-            ).decode()
-            return any("ESTAB" in line for line in out.splitlines())
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # conservative fallback – assume in use
-            return True
-
-    def _simple_lifecycle(self, verb: str, *, extra: Optional[List[str]] = None) -> bool:
-        if not self.honeypot_name:
-            raise HoneypotError("Honeypot details not available - call get_honeypot_details() first")
-        
-        # Guards ------------------------------------------------------------
-        if verb in {"stop", "rm"} and self._port_has_established_connections():
-            raise HoneypotActiveConnectionsError(
-                f"Port {self.honeypot_port} has active connections - cannot {verb} the honeypot"
-            )
-            
-        cmd = ["podman", verb, self.honeypot_name]
-        if extra:
-            cmd[2:2] = extra
         try:
             self.runner.run(cmd)
-            logger.info("[✓] %s %s", verb.capitalize(), self.honeypot_name)
-            
-            # Update status after operation
-            if verb == "start":
-                self.honeypot_status = "running"
-            elif verb == "stop":
-                self.honeypot_status = "stopped" 
-            elif verb == "rm":
-                self.honeypot_status = "deleted"
-                
-            return True
-        except PodmanError as exc:
-            error_msg = str(exc).lower()
-            
-            # Specific error messages based on the operation and error
-            if "no such container" in error_msg:
-                raise HoneypotContainerError(f"Honeypot '{self.honeypot_name}' not found")
-            elif "already running" in error_msg:
-                raise HoneypotContainerError(f"Honeypot '{self.honeypot_name}' is already running")
-            elif "not running" in error_msg and verb == "stop":
-                raise HoneypotContainerError(f"Honeypot '{self.honeypot_name}' is not running")
-            elif "permission denied" in error_msg:
-                raise HoneypotPrivilegedPortError(f"Permission denied when trying to {verb} honeypot")
-            else:
-                raise HoneypotContainerError(f"Failed to {verb} honeypot '{self.honeypot_name}': {exc}")
-
-    # ------------------------------------------------------------------
-    # port validation
-    # ------------------------------------------------------------------
-    def is_port_in_use(self, port: int) -> bool:
-        """Check if the specified port is already being used by any honeypot container.
-        
-        Args:
-            port: The port number to check
-            
-        Returns:
-            bool: True if port is already in use, False otherwise
-        """
-        try:
-            # List all containers with the honeypot manager label and check their ports
-            cmd = [
-                "podman", "ps", "-a", 
-                "--format", "{{.Labels}}", 
-                "--filter", "label=service=hive-honeypot-manager"
-            ]
-            output = self.runner.run(cmd, return_output=True)
-            
-            # Check each line for port information in the labels
-            for line in output.strip().splitlines():
-                if not line:
-                    continue
-                    
-                # Extract port from labels (format: map[hive.port:22 hive.type:ssh service:hive-honeypot-manager])
-                if "hive.port:" in line:
-                    parts = line.split("hive.port:")
-                    if len(parts) > 1:
-                        port_str = parts[1].split()[0].strip()
-                        try:
-                            existing_port = int(port_str)
-                            if existing_port == port:
-                                logger.info(f"Port {port} is already in use by another honeypot")
-                                return True
-                        except ValueError:
-                            # If port can't be parsed as int, continue checking
-                            continue
-            
-            # Additionally check if the port is already bound by any process on the host
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                # Set timeout to avoid hanging
-                s.settimeout(0.5)
-                # Try to bind to the port to see if it's available
-                try:
-                    s.bind(("127.0.0.1", port))
-                    # Port is free
-                    return False
-                except (socket.error, OSError):
-                    # Port is in use
-                    logger.info(f"Port {port} is already bound by a process on the host")
-                    return True
-                finally:
-                    s.close()
-                    
-            return False
         except Exception as exc:
-            logger.error(f"Error checking if port {port} is in use: {exc}")
-            # If there's an error, assume the port might be in use to be safe
-            return True
+            msg = str(exc).lower()
+            if "already exists" in msg:
+                raise HoneypotExistsError(self.name) from exc
+            raise HoneypotContainerError(f"Creation failed: {exc}") from exc
 
-    # ------------------------------------------------------------------
-    # render for API
-    # ------------------------------------------------------------------
+        # 6) inspect post-create
+        self.get_honeypot_details(self.name)
+
+    def start_honeypot(self) -> None:
+        if self.status == "running":
+            raise HoneypotContainerError(f"{self.name} already running")
+        self._lifecycle("start")
+
+    def stop_honeypot(self) -> None:
+        if self._has_active_connections(self.port):
+            raise HoneypotActiveConnectionsError(f"{self.name} has active connections")
+        self._lifecycle("stop")
+
+    def restart_honeypot(self) -> None:
+        if self.status != "running":
+            raise HoneypotContainerError(f"Cannot restart '{self.name}' when not running")
+        self._lifecycle("restart")
+
+    def delete_honeypot(self) -> None:
+        if self.status == "running":
+            raise HoneypotContainerError("Stop container before deleting")
+        self._lifecycle("rm", extra=["-f"])
+
+    def _lifecycle(self, cmd: str, extra: List[str] = []) -> None:
+        try:
+            self.runner.run(["podman", cmd, *extra, self.name])
+            if cmd != "rm":
+                self.get_honeypot_details(self.name)
+            else:
+                self.reset_metadata()
+        except Exception as exc:
+            raise HoneypotContainerError(f"{cmd} failed: {exc}") from exc
+
+    def get_honeypot_details(self, identifier: str) -> Optional[HoneypotManager]:
+        try:
+            out = self.runner.run(
+                ["podman", "inspect", identifier, "--format", "json"],
+                return_output=True
+            )
+        except Exception as exc:
+            msg = str(exc).lower()
+            if "no such" in msg:
+                return None
+            raise HoneypotContainerError(f"Inspect failed: {exc}") from exc
+
+        try:
+            data = json.loads(out)[0]
+            self.id = data["Id"]
+            self.name = data["Name"].lstrip("/")
+            self.status = data["State"]["Status"]
+            labels = data["Config"].get("Labels", {}) or {}
+            self.type = labels.get("hive.type")
+            self.port = int(labels.get("hive.port") or 0)
+            self.image = data["Config"].get("Image")
+            return self
+        except Exception as exc:
+            raise HoneypotContainerError(f"Parsing inspect output failed: {exc}") from exc
+
+    def _has_active_connections(self, port: int) -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("0.0.0.0", port))
+                return False
+            except OSError:
+                return True
+
+    def is_port_in_use(self, port: int) -> bool:
+        out = self.runner.run(
+            ["podman", "ps", "-a", "--filter", f"label=hive.port={port}", "--format", "json"],
+            return_output=True
+        ) or "[]"
+        if json.loads(out):
+            return True
+        return self._has_active_connections(port)
+
     def to_dict(self) -> Dict[str, Any]:
-        # Ensure we're not returning a dict with null/None values
-        # Only include non-None values or convert None to appropriate defaults
-        result = {
-            "id": self.honeypot_id or "",
-            "name": self.honeypot_name or "",
-            "type": self.honeypot_type or "",
-            "port": self.honeypot_port or 0,
-            "status": self.honeypot_status or "unknown",
-            "image": self.honeypot_image or "",
+        return {
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "port": self.port,
+            "status": self.status,
+            "image": self.image,
         }
-        return result

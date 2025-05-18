@@ -78,6 +78,45 @@ class OpenSearchManager(BaseContainerManager):
         self.runner.run(["podman","stop",self._DASH_NAME])
         super().stop()
 
+    def delete(self):
+        # Try to stop the dashboard if it's running
+        try:
+            result = self.runner.run(
+                ["podman", "inspect", "-f", "{{.State.Status}}", self._DASH_NAME],
+                capture_output=True
+            )
+            if result.stdout.strip() == "running":
+                self.runner.run(["podman", "stop", self._DASH_NAME])
+                logger.info("[✓] Dashboard container '%s' stopped", self._DASH_NAME)
+        except Exception:
+            logger.warning("[!] Could not inspect or stop dashboard – continuing deletion")
+
+        # Try to remove the dashboard
+        try:
+            self.runner.run(["podman", "rm", "-f", self._DASH_NAME])
+            logger.info("[✓] Dashboard container '%s' deleted", self._DASH_NAME)
+        except Exception:
+            logger.warning("[!] Failed to remove dashboard container – it may not exist")
+
+        # Then delete the main OpenSearch node
+        super().delete()
+
+
+    def dashboard_status(self) -> str:
+        try:
+            state = self.runner.run(
+                ["podman", "inspect", "-f", "{{.State.Status}}", self._DASH_NAME],
+                return_output=True
+            ).strip()
+            return state if state else "not found"
+        except Exception as e:
+            logger.warning("[!] Dashboard status check failed: %s", e)
+            return "not found"
+
+
+
+    
+
     # ────────────────────────────────────────────────────────────────────
     def _has_disk(self) -> bool:
         candidates = [

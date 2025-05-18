@@ -1,0 +1,123 @@
+<footer
+  style="
+    background-color: #000000;
+    color: #ffffff;
+    padding: 2.5rem 0 1rem;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    border-top: 2px solid #ff3d4c;
+  "
+  class="bg-primary text-secondary mt-auto w-full"
+>
+  <div
+    style="max-width: 1200px; margin: 0 auto; padding: 0 1.5rem"
+    class="container mx-auto px-6"
+  >
+    <!-- Footer Content - Simplified with only Quick Links -->
+    <div class="mb-8">
+      <!-- Quick Links -->
+      <div class="mb-6">
+        <h3 class="text-accent font-display text-xl mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li>
+            <a
+              href="/honeypots"
+              class="text-white/70 hover:text-white hover:underline transition-colors"
+              >Honeypots</a
+            >
+          </li>
+          <li>
+            <a
+              href="/services"
+              class="text-white/70 hover:text-white hover:underline transition-colors"
+              >Services</a
+            >
+          </li>
+          <li>
+            <a
+              href="/documentation"
+              class="text-white/70 hover:text-white hover:underline transition-colors"
+              >Documentation</a
+            >
+          </li>
+          <li>
+            <a
+              href="/contact"
+              class="text-white/70 hover:text-white hover:underline transition-colors"
+              >Contact</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="border-t border-white/10 pt-4 mb-4"></div>
+
+    <!-- Copyright - Simplified -->
+    <div class="flex justify-center items-center">
+      <p class="text-sm text-white/70 text-center">
+        © 2025 PROJECT H.I.V.E. ALL RIGHTS RESERVED.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Ensure the page has a dark theme */
+  body {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Push footer to bottom even with minimal content */
+  footer {
+    margin-top: auto;
+    width: 100vw !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Style main content area */
+  main {
+    flex-grow: 1;
+    padding: 2rem 0;
+  }
+
+  /* Override any color applied with !important to ensure correct color */
+  .text-secondary,
+  [class*="text-secondary"],
+  footer [style*="color:"] {
+    color: #ffffff !important;
+  }
+
+  /* Subtle footer animations */
+  footer a {
+    transition: all 0.2s ease;
+  }
+
+  /* Improved mobile styles */
+  @media (max-width: 640px) {
+    footer h3 {
+      text-align: center;
+    }
+
+    footer p {
+      text-align: center;
+    }
+
+    footer ul {
+      text-align: center;
+    }
+  }
+</style>

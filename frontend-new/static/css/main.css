@@ -1,0 +1,293 @@
+/* frontend/src/styles/main.css */
+/* (currently empty—Tailwind via CDN covers utilities) */
+
+/* When moving to a local build, you’ll add: */
+/*
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+*/
+
+/* Global styles for Project H.I.V.E */
+
+/* Typography setup */
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, 
+.font-display, 
+button.primary-button,
+.navbar-item,
+.section-title {
+  font-family: "Iceland", "Impact", "Arial Black", sans-serif;
+  letter-spacing: 0.05em;
+}
+
+/* Custom scrollbar - not easily doable with Tailwind */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 61, 76, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 61, 76, 0.7);
+}
+
+/* Improved form styling for accessibility */
+input:focus, select:focus, textarea:focus, button:focus {
+  outline: none;
+  border-color: #FF3D4C; /* Accent color */
+  box-shadow: none;
+}
+
+/* Remove double outline from select fields and enhance their appearance */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: 1px solid rgba(255, 61, 76, 0.3);
+  text-indent: 1px;
+  text-overflow: '';
+  outline: none !important; /* Forcefully remove browser outline */
+  box-sizing: border-box;
+  transition: border-color 0.3s ease; /* Only transition border color, not dimensions */
+  min-height: 46px; /* Match the input height exactly */
+  height: 46px; /* Fixed height to prevent jumping */
+}
+
+select:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 1px solid #FF3D4C;
+}
+
+select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #ffffff; /* Make text color during focus in Firefox */
+}
+
+/* Fix Firefox focus styles which can cause double borders */
+@-moz-document url-prefix() {
+  select:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: #FF3D4C !important;
+  }
+}
+
+/* Fix for select boxes changing size when border changes */
+select.field-adjusted, 
+select:focus, 
+select.border-danger {
+  height: 46px; /* Keep the exact same height */
+  margin: 0; /* Ensure margins stay consistent */
+  /* Adjust border width without changing box dimensions */
+  box-shadow: 0 0 0 1px rgba(255, 61, 76, 0.6); 
+  border: 1px solid rgba(255, 61, 76, 0.6);
+}
+
+/* Fix for select dropdown arrows moving during value changes */
+.pointer-events-none.absolute.inset-y-0.right-0.flex.items-center {
+  width: 40px; /* Fixed width for the arrow container */
+  justify-content: center; /* Center the arrow horizontally */
+  transition: none !important; /* Prevent any transitions on the arrow */
+  transform: none !important; /* Prevent any transforms */
+  right: 0 !important; /* Ensure it stays at the right edge */
+}
+
+/* Remove any transitions on the SVG arrow itself */
+.pointer-events-none.absolute.inset-y-0.right-0.flex.items-center svg {
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Stabilize select wrapper */
+.relative {
+  position: relative;
+  overflow: visible; /* Ensure the dropdown isn't clipped */
+}
+
+/* Form field enhancements - for better input experience */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Status colors - these match Tailwind colors but are defined here for JS usage */
+.text-success { color: #10B981; }
+.text-danger { color: #EF4444; }
+.text-warning { color: #F59E0B; }
+
+.bg-success\/20 { background-color: rgba(16, 185, 129, 0.2); }
+.bg-danger\/20 { background-color: rgba(239, 68, 68, 0.2); }
+.bg-warning\/20 { background-color: rgba(245, 158, 11, 0.2); }
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus indicators for accessibility */
+.focus-visible:focus-visible {
+  outline: none;
+  border-color: #FF3D4C;
+}
+
+/* Section styling */
+.section-card {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.section-card:hover {
+  border-color: rgba(255, 61, 76, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Form status feedback */
+.status-indicator {
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  transition: opacity 0.3s ease, height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+}
+
+.status-indicator.visible {
+  opacity: 1;
+  height: auto;
+  margin-top: 1rem;
+}
+
+/* Interactive elements */
+.interactive-element {
+  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.interactive-element:hover {
+  transform: translateY(-2px);
+}
+
+.interactive-element:active {
+  transform: translateY(0);
+}
+
+/* Form validation styles */
+.border-danger {
+  border-color: #EF4444 !important;
+}
+
+.validation-error {
+  color: #EF4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.quick-feedback {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Animation for validation messages */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.validation-error, .quick-feedback {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Highlight field when validation fails */
+input:invalid, select:invalid {
+  border-color: #EF4444;
+}
+
+/* Prevent number spinners for more consistent UI */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Field auto-adjustment highlight effects */
+@keyframes highlightField {
+  0% { border-color: rgba(255, 61, 76, 0.3); }
+  50% { border-color: rgba(255, 61, 76, 0.8); }
+  100% { border-color: rgba(255, 61, 76, 0.3); }
+}
+
+.field-adjusted {
+  animation: highlightField 1s ease;
+}
+
+/* Select field focus/active styles to prevent visual glitches */
+select:active, select:focus {
+  outline: none;
+  border-color: rgba(255, 61, 76, 0.6);
+}
+
+/* Make select options more readable */
+select option {
+  background-color: #121212;
+  color: #ffffff;
+  padding: 10px;
+}
+
+/* Ensure consistent select field appearance across browsers */
+select {
+  /* Remove default arrow in IE */
+  -ms-appearance: none;
+  /* Remove default arrow in Firefox */
+  -moz-appearance: none;
+  /* Remove default arrow in Chrome/Safari/Edge */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Glowing button effect */
+.glow-button {
+  box-shadow: 0 0 8px rgba(255, 61, 76, 0.3);
+  transition: all 0.3s ease;
+}
+
+.glow-button:hover {
+  box-shadow: 0 0 20px rgba(255, 61, 76, 0.7);
+  transform: translateY(-2px);
+}

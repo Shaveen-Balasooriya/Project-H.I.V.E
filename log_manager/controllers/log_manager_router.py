@@ -1,7 +1,8 @@
 from __future__ import annotations
 """REST endpoints for Project-H.I.V.E log-manager."""
 
-from typing import Dict
+from typing import Dict, List
+import subprocess
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -25,6 +26,7 @@ class StatusResponse(BaseModel):
     open_search_node: str
     nats_server: str
     log_collector: str
+    open_search_dashboard: str
 
 # ───────────────────────────── helpers ───────────────────────────────────────
 def _orchestrator(password: str | None = None) -> ServiceOrchestrator:
@@ -37,10 +39,8 @@ def _err(detail: str, code: int = status.HTTP_400_BAD_REQUEST):
 @router.post("/create", response_model=SimpleResponse)
 async def create_services(body: AdminPasswordBody):
     orch = _orchestrator(body.admin_password)
-
     if orch.any_exists():
         _err("Required containers already exist. Delete them before creating again.")
-
     try:
         await run_in_threadpool(orch.create_all)
         return {"message": "Containers created successfully"}
@@ -48,18 +48,14 @@ async def create_services(body: AdminPasswordBody):
         logger.exception("Create failed")
         _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @router.post("/start", response_model=SimpleResponse)
 async def start_services():
     orch = _orchestrator()
-
     miss = orch.missing()
     if miss:
         _err(f"Containers not found: {', '.join(miss)}. Create them first.")
-
     if not orch.not_running():
         return {"message": "Containers already running"}
-
     try:
         await run_in_threadpool(orch.start_all)
         return {"message": "Containers started successfully"}
@@ -69,17 +65,13 @@ async def start_services():
         logger.exception("Start failed")
         _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @router.post("/stop", response_model=SimpleResponse)
 async def stop_services():
     orch = _orchestrator()
-
     if orch.missing():
         _err("Containers do not exist – nothing to stop.")
-    # return only if none are running
     if not orch.any_running():
         return {"message": "Containers already stopped"}
-
     try:
         await run_in_threadpool(orch.stop_all)
         return {"message": "Containers stopped successfully"}
@@ -87,21 +79,30 @@ async def stop_services():
         logger.exception("Stop failed")
         _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @router.delete("/delete", response_model=SimpleResponse)
 async def delete_services():
     orch = _orchestrator()
-
     if orch.missing():
         _err("Containers do not exist – nothing to delete.")
     if orch.any_running():
         _err("Containers are running. Stop them before deletion.")
-
     try:
         await run_in_threadpool(orch.delete_all)
         return {"message": "Containers deleted successfully"}
     except (PodmanError, ResourceError) as e:
         logger.exception("Delete failed")
+        _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@router.post("/restart", response_model=SimpleResponse)
+async def restart_services():
+    orch = _orchestrator()
+    if orch.missing():
+        _err("Containers do not exist – create them first.")
+    try:
+        await run_in_threadpool(orch.restart_all)
+        return {"message": "Containers restarted successfully"}
+    except (PodmanError, ResourceError) as e:
+        logger.exception("Restart failed")
         _err(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -113,4 +114,16 @@ async def status_services():
         "open_search_node": s.get("hive-opensearch-node", "not found"),
         "nats_server":      s.get("hive-nats-server",    "not found"),
         "log_collector":    s.get("hive-log-collector",  "not found"),
+        "open_search_dashboard": s.get("hive-opensearch-dash", "not found"),
     }
+
+@router.get("/services", response_model=List[str])
+async def list_running_services():
+    orch = _orchestrator()
+    running_map = orch._running_map()
+    running = [name for name, is_run in running_map.items() if is_run]
+    if orch.opensearch.dashboard_status() == "running":
+        running.append("hive-opensearch-dash")
+
+    return running
+

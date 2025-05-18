@@ -1,10 +1,12 @@
 authentication:
   allowed_users:
   - username: admin
-    password: admin123
+    password: admin
   - username: user
-    password: passw0rd
+    password: user
   - username: root
-    password: toor
+    password: root
+  - username: test
+    password: test
 banner: Apache/2.4.41
 auth_realm: Secure Area

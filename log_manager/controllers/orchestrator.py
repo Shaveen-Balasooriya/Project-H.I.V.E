@@ -9,20 +9,15 @@ from log_manager.models.OpenSearch_Manager import OpenSearchManager
 from log_manager.models.NATSServer_Manager import NatsServerManager
 from log_manager.models.Log_Collector_Manager import LogCollectorManager
 
-
 class ServiceOrchestrator:
     """Aggregate operations across the three container managers."""
-
     def __init__(self, admin_password: Optional[str] = None) -> None:
-        # Password is only needed during *create*.  For start/stop/status a
-        # placeholder is fine.
         admin_password = admin_password or "ChangeMe!"
         self.opensearch = OpenSearchManager(admin_password)
         self.nats       = NatsServerManager()
         self.collector  = LogCollectorManager(admin_password)
         self._all       = [self.opensearch, self.nats, self.collector]
 
-    # ───────────────────────────────────────────────── helpers ─────────────────
     def _exists_map(self) -> Dict[str, bool]:
         return {m.name: m.exists() for m in self._all}
 
@@ -32,25 +27,20 @@ class ServiceOrchestrator:
     def _running_map(self) -> Dict[str, bool]:
         return {m.name: m.status() == "running" for m in self._all}
 
-    # ───────────────────────────── public batch operations ────────────────────
     def create_all(self) -> None:
         for m in self._all:
-            m.create()          # may pull images – blocking
+            m.create()
 
     def start_all(self) -> None:
-        # Start OpenSearch if not already running
         if self.opensearch.status() != "running":
             self.opensearch.start()
-        # Start NATS if not running
         if self.nats.status() != "running":
             self.nats.start()
-        time.sleep(5)         # wait for NATS to be ready before collector
-        # Start log collector if not running
+        time.sleep(5)
         if self.collector.status() != "running":
             self.collector.start()
 
     def stop_all(self) -> None:
-        # Stop containers in reverse order, only those running
         for m in reversed(self._all):
             if m.status() == "running":
                 m.stop()
@@ -59,7 +49,14 @@ class ServiceOrchestrator:
         for m in reversed(self._all):
             m.delete()
 
-    # ───────────────────────────── routing helpers ────────────────────────────
+    def restart_all(self) -> None:
+        for m in reversed(self._all):
+            if m.status() == "running":
+                m.stop()
+        time.sleep(2)
+        for m in self._all:
+            m.start()
+
     def any_exists(self) -> bool:
         return any(self._exists_map().values())
 
@@ -73,4 +70,7 @@ class ServiceOrchestrator:
         return [n for n, run in self._running_map().items() if not run]
 
     def status_report(self) -> Dict[str, str]:
-        return self._status_map()
+        report = self._status_map()
+        report["hive-opensearch-dash"] = self.opensearch.dashboard_status()
+        return report
+
