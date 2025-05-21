@@ -1,7 +1,10 @@
 import os
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
+import secrets
+from functools import wraps
 
 # Load environment variables from .env file
 load_dotenv()
@@ -15,6 +18,40 @@ print(f"Using Log Manager API: {LOG_API}")  # Debug log for LOG_API
 
 # Initialize Flask app
 app = Flask(__name__)
+# Set secret key for session management
+app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(16))
+# Set session lifetime
+app.permanent_session_lifetime = timedelta(hours=12)
+
+# Helper function to check authentication
+def is_authenticated():
+    """Check if user is authenticated"""
+    return session.get('authenticated', False)
+
+# New helper to check if session has expired based on token expiry time
+def is_session_expired():
+    """Check if the session has expired based on the token expiry time"""
+    if 'expiry_time' in session:
+        expiry_time = datetime.fromisoformat(session['expiry_time'])
+        return datetime.now() > expiry_time
+    return False
+
+# Add a decorator to check both authentication and expiration
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # First check if authenticated
+        if not is_authenticated():
+            return redirect(url_for('login'))
+            
+        # Then check if session has expired
+        if is_session_expired():
+            app.logger.info("Session expired based on token duration")
+            session.clear()
+            return redirect(url_for('login', expired=True))
+            
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Helper function to check if all required services are running
 def check_services_running():
@@ -48,13 +85,31 @@ def check_services_running():
         app.logger.error(f"Error checking running services: {str(e)}")
         return False, []
 
+# Login page route
+@app.route('/login')
+def login():
+    """Display login page"""
+    # Check if redirected due to expiration
+    expired = request.args.get('expired', False)
+    return render_template('pages/login.html', expired=expired)
+
 # Main page routes
 @app.route('/')
 def index():
-    """Redirect root URL to honeypots page"""
+    """Redirect root URL to honeypots page or login if not authenticated"""
+    if not is_authenticated():
+        return redirect(url_for('login'))
+    
+    # Check if session has expired
+    if is_session_expired():
+        session.clear()
+        return redirect(url_for('login', expired=True))
+        
     return redirect(url_for('honeypots'))
 
 @app.route('/honeypots')
+@login_required
+
 def honeypots():
     # Check if all required services are running
     services_running, services_info = check_services_running()
@@ -70,6 +125,8 @@ def honeypots():
     return render_template('pages/honeypots.html')
 
 @app.route('/honeypot-builder')
+@login_required
+
 def honeypot_builder():
     # First check services
     services_running, services_info = check_services_running()
@@ -108,12 +165,77 @@ def honeypot_builder():
     return render_template('pages/honeypot-builder.html')
 
 @app.route('/services')
+@login_required
 def services():
     """
     Route for the services management page
     """
     return render_template('pages/services.html')
+  
+# Authentication routes
+@app.route('/access')
+def access():
+    """Process token-based authentication"""
+    token = request.args.get('token')
+    if not token:
+        return "Missing token", 400
 
+    try:
+        # Use path joining for cross-platform compatibility
+        token_path = os.path.join(os.path.dirname(__file__), "token.txt")
+        expiry_path = os.path.join(os.path.dirname(__file__), "token_expiry.txt")
+        
+        app.logger.info(f"Looking for token at: {token_path}")
+        
+        # Check if token files exist
+        if not os.path.exists(token_path) or not os.path.exists(expiry_path):
+            app.logger.error(f"Token files not found. Token path exists: {os.path.exists(token_path)}, Expiry path exists: {os.path.exists(expiry_path)}")
+            return "Token is missing or already used.", 403
+            
+        # Read the token
+        with open(token_path, 'r') as f:
+            valid_token = f.read().strip()
+            app.logger.debug(f"Read token from file: {valid_token[:5]}...")
+
+        # Read the expiry time
+        with open(expiry_path, 'r') as f:
+            expiry_time_str = f.read().strip()
+            app.logger.debug(f"Read expiry time: {expiry_time_str}")
+            expiry_time = datetime.fromisoformat(expiry_time_str)
+
+        # Check if token has expired
+        if datetime.now() > expiry_time:
+            app.logger.warning(f"Token expired at {expiry_time}")
+            return "Token has expired", 403
+
+        # Validate the token
+        if token == valid_token:
+            app.logger.info("Token validation successful")
+            session.permanent = True
+            session['authenticated'] = True
+            
+            # Store the expiry time in the session
+            session['expiry_time'] = expiry_time.isoformat()
+            session['token_validated'] = True
+            
+            return redirect(url_for('honeypots'))
+        else:
+            app.logger.warning("Invalid token provided")
+            return "Invalid token", 403
+
+    except FileNotFoundError as e:
+        app.logger.error(f"Token file not found: {str(e)}")
+        return "Token is missing or already used.", 403
+    except Exception as e:
+        app.logger.error(f"Token access error: {str(e)}")
+        return "Server error", 500
+
+@app.route('/logout')
+def logout():
+    """Log out the user by clearing the session"""
+    session.clear()
+    return redirect(url_for('login'))
+  
 # API proxy routes - Honeypot Manager
 @app.route('/api/honeypot/types', methods=['GET'])
 def get_honeypot_types():
@@ -496,6 +618,3 @@ def get_running_services():
     except Exception as e:
         app.logger.error(f"Error accessing services list at {LOG_API}/services: {str(e)}")
         return jsonify([]), 200  # Return empty list for development/error cases
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000, reload=True)
