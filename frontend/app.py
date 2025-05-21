@@ -109,6 +109,7 @@ def index():
 
 @app.route('/honeypots')
 @login_required
+
 def honeypots():
     # Check if all required services are running
     services_running, services_info = check_services_running()
@@ -125,6 +126,7 @@ def honeypots():
 
 @app.route('/honeypot-builder')
 @login_required
+
 def honeypot_builder():
     # First check services
     services_running, services_info = check_services_running()
@@ -169,7 +171,7 @@ def services():
     Route for the services management page
     """
     return render_template('pages/services.html')
-
+  
 # Authentication routes
 @app.route('/access')
 def access():
@@ -233,7 +235,7 @@ def logout():
     """Log out the user by clearing the session"""
     session.clear()
     return redirect(url_for('login'))
-
+  
 # API proxy routes - Honeypot Manager
 @app.route('/api/honeypot/types', methods=['GET'])
 def get_honeypot_types():
