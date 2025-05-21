@@ -24,8 +24,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     uvicorn.run(
         "main:app",          # module:app reference
-        host="0.0.0.0",      # bind to all interfaces
+        host="localhost",      # bind to all interfaces
         port=8080,             # API port
-        reload=True,           # auto-reload on code changes (dev only)
         log_level="info",
     )

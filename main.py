@@ -12,6 +12,11 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).parent.absolute()
 TOKEN_FILE = PROJECT_DIR / "frontend" / "token.txt"
 TOKEN_EXPIRY_FILE = PROJECT_DIR / "frontend" / "token_expiry.txt"
+REQUIREMENTS_FILE = PROJECT_DIR / "requirements.txt"
+
+# Global variables for manager processes
+honeypot_proc = None
+log_proc = None
 
 
 def is_admin():
@@ -30,6 +35,59 @@ def is_admin():
         except AttributeError:
             print("[!] Could not determine admin status on this platform.")
             return False
+
+
+def check_and_install_requirements():
+    """Check and install required packages based on platform."""
+    print("\n[*] Checking and installing required packages...")
+    
+    python_cmd = "python" if platform.system() == "Windows" else "python3"
+    
+    try:
+        # Determine which requirements to install based on platform
+        if platform.system() == "Windows":
+            print("[*] Detected Windows platform, installing Windows-specific requirements...")
+            # Install common and Windows-specific requirements
+            cmd = [
+                python_cmd, "-m", "pip", "install", 
+                "Flask>=2.0.0", "python-dotenv>=0.19.0", "requests>=2.26.0",
+                "fastapi>=0.70.0", "uvicorn>=0.15.0", "pydantic>=1.9.0",
+                "PyYAML>=6.0", "aiohttp>=3.8.1",
+                "pywin32"  # Windows-specific
+            ]
+        else:
+            print("[*] Detected Unix/Linux platform, installing Unix-specific requirements...")
+            # Install common and Unix-specific requirements
+            cmd = [
+                python_cmd, "-m", "pip", "install", 
+                "Flask>=2.0.0", "python-dotenv>=0.19.0", "requests>=2.26.0",
+                "fastapi>=0.70.0", "uvicorn>=0.15.0", "pydantic>=1.9.0",
+                "PyYAML>=6.0", "aiohttp>=3.8.1",
+                "simplepam"  # Unix-specific
+            ]
+        
+        # Run pip install
+        print("[*] Installing packages... (This may take a moment)")
+        process = subprocess.run(
+            cmd, 
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        if process.returncode == 0:
+            print("[+] Successfully installed required packages.")
+            return True
+        else:
+            print(f"[!] Error installing packages: {process.stderr}")
+            choice = input("[?] Continue anyway? (y/n): ").strip().lower()
+            return choice == 'y'
+            
+    except Exception as e:
+        print(f"[!] Error installing requirements: {e}")
+        choice = input("[?] Continue anyway? (y/n): ").strip().lower()
+        return choice == 'y'
 
 
 def generate_token():
@@ -77,7 +135,35 @@ def write_token_to_file(token, expiry_minutes):
 
 def start_services(duration_minutes, token):
     """Start the Flask frontend and optionally other services."""
-    print(f"\n[+] Starting services for {duration_minutes} minutes...")
+    # Start the manager services
+    global honeypot_proc, log_proc
+    python_cmd = "python" if platform.system() == "Windows" else "python3"
+    
+    print("[+] Starting honeypot manager and log manager services...")
+    # Set PYTHONPATH environment
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(PROJECT_DIR)
+    
+    # Start honeypot manager with specific port
+    honeypot_proc = subprocess.Popen(
+        [python_cmd, "-m", "uvicorn", "honeypot_manager.main:app", "--host", "localhost", "--port", "8080"],
+        env=env,
+        cwd=str(PROJECT_DIR)
+    )
+    print(f"[+] Started honeypot manager (PID: {honeypot_proc.pid})")
+    
+    # Start log manager with specific port
+    log_proc = subprocess.Popen(
+        [python_cmd, "-m", "uvicorn", "log_manager.main:app", "--host", "localhost", "--port", "9090"],
+        env=env,
+        cwd=str(PROJECT_DIR)
+    )
+    print(f"[+] Started log manager (PID: {log_proc.pid})")
+    
+    # Give services a moment to start
+    time.sleep(2)
+    
+    print(f"\n[+] Starting frontend services for {duration_minutes} minutes...")
 
     # Get proper Python executable
     python_cmd = "python" if platform.system() == "Windows" else "python3"
@@ -169,7 +255,7 @@ def start_services(duration_minutes, token):
             print("\n[+] User interrupted. Shutting down services...")
         
         # Clean up
-        print("[+] Terminating Flask server...")
+        print("[+] Terminating services...")
         frontend_proc.terminate()
         try:
             # Wait up to 5 seconds for graceful shutdown
@@ -179,11 +265,24 @@ def start_services(duration_minutes, token):
             print("[!] Flask server didn't terminate gracefully, forcing...")
             frontend_proc.kill()
         
+        # Stop manager services
+        if honeypot_proc:
+            honeypot_proc.terminate()
+            print("[+] Terminated honeypot manager")
+        if log_proc:
+            log_proc.terminate()
+            print("[+] Terminated log manager")
+        
         clean_up_token_files()
-        print("[+] Dashboard session ended. Services terminated.")
+        print("[+] Dashboard session ended. All services terminated.")
         
     except Exception as e:
         print(f"[!] Error starting Flask: {e}")
+        # Stop manager services on error
+        if honeypot_proc:
+            honeypot_proc.terminate()
+        if log_proc:
+            log_proc.terminate()
         clean_up_token_files()
         sys.exit(1)
 
@@ -212,7 +311,15 @@ if __name__ == "__main__":
         sys.exit(1)
     
     print("[+] Admin privileges confirmed!")
-
+    
+    # Simplified requirements check and installation
+    if not check_and_install_requirements():
+        print("[!] Failed to install required packages. Some features may not work correctly.")
+        choice = input("[?] Continue anyway? (y/n): ").strip().lower()
+        if choice != 'y':
+            print("[+] Exiting. Please install the required packages manually and try again.")
+            sys.exit(1)
+    
     # Session duration selection
     print("\nSelect session duration:")
     print("1. 15 minutes")
@@ -233,5 +340,5 @@ if __name__ == "__main__":
     print(f"\n[+] Access Token: {token}")
     print("[!] This token will be used to authenticate your browser session.")
 
-    # Start services with the generated token
+    # Start all services with the generated token
     start_services(duration, token)
