@@ -1,18 +1,18 @@
 # Project H.I.V.E Main Requirements
 
 # Web frontend
-Flask>=2.0.0
-python-dotenv>=0.19.0
-requests>=2.26.0
+Flask
+python-dotenv
+requests
 
 # API servers
-fastapi>=0.70.0
-uvicorn>=0.15.0
-pydantic>=1.9.0
+fastapi
+uvicorn
+pydantic
 
 # Configuration and data processing
-PyYAML>=6.0
-aiohttp>=3.8.1
+PyYAML
+aiohttp
 
 # Windows Admin Auth
 pywin32; platform_system == "Windows"

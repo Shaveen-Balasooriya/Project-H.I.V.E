@@ -37,59 +37,6 @@ def is_admin():
             return False
 
 
-def check_and_install_requirements():
-    """Check and install required packages based on platform."""
-    print("\n[*] Checking and installing required packages...")
-    
-    python_cmd = "python" if platform.system() == "Windows" else "python3"
-    
-    try:
-        # Determine which requirements to install based on platform
-        if platform.system() == "Windows":
-            print("[*] Detected Windows platform, installing Windows-specific requirements...")
-            # Install common and Windows-specific requirements
-            cmd = [
-                python_cmd, "-m", "pip", "install", 
-                "Flask>=2.0.0", "python-dotenv>=0.19.0", "requests>=2.26.0",
-                "fastapi>=0.70.0", "uvicorn>=0.15.0", "pydantic>=1.9.0",
-                "PyYAML>=6.0", "aiohttp>=3.8.1",
-                "pywin32"  # Windows-specific
-            ]
-        else:
-            print("[*] Detected Unix/Linux platform, installing Unix-specific requirements...")
-            # Install common and Unix-specific requirements
-            cmd = [
-                python_cmd, "-m", "pip", "install", 
-                "Flask>=2.0.0", "python-dotenv>=0.19.0", "requests>=2.26.0",
-                "fastapi>=0.70.0", "uvicorn>=0.15.0", "pydantic>=1.9.0",
-                "PyYAML>=6.0", "aiohttp>=3.8.1",
-                "simplepam"  # Unix-specific
-            ]
-        
-        # Run pip install
-        print("[*] Installing packages... (This may take a moment)")
-        process = subprocess.run(
-            cmd, 
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        if process.returncode == 0:
-            print("[+] Successfully installed required packages.")
-            return True
-        else:
-            print(f"[!] Error installing packages: {process.stderr}")
-            choice = input("[?] Continue anyway? (y/n): ").strip().lower()
-            return choice == 'y'
-            
-    except Exception as e:
-        print(f"[!] Error installing requirements: {e}")
-        choice = input("[?] Continue anyway? (y/n): ").strip().lower()
-        return choice == 'y'
-
-
 def generate_token():
     """Generate a secure random token."""
     return secrets.token_urlsafe(32)
@@ -144,24 +91,57 @@ def start_services(duration_minutes, token):
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_DIR)
     
-    # Start honeypot manager with specific port
-    honeypot_proc = subprocess.Popen(
-        [python_cmd, "-m", "uvicorn", "honeypot_manager.main:app", "--host", "localhost", "--port", "8080"],
-        env=env,
-        cwd=str(PROJECT_DIR)
-    )
-    print(f"[+] Started honeypot manager (PID: {honeypot_proc.pid})")
+    # Try to start honeypot manager with specific port
+    try:
+        honeypot_proc = subprocess.Popen(
+            [python_cmd, "-m", "uvicorn", "honeypot_manager.main:app", "--host", "localhost", "--port", "8080"],
+            env=env,
+            cwd=str(PROJECT_DIR),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        print(f"[+] Started honeypot manager (PID: {honeypot_proc.pid})")
+        
+        # Quick check if process is still running after a brief moment
+        time.sleep(1)
+        if honeypot_proc.poll() is not None:
+            stdout, stderr = honeypot_proc.communicate()
+            print(f"[!] Honeypot manager failed to start: {stderr.decode()}")
+            honeypot_proc = None
+    except Exception as e:
+        print(f"[!] Failed to start honeypot manager: {e}")
+        honeypot_proc = None
     
-    # Start log manager with specific port
-    log_proc = subprocess.Popen(
-        [python_cmd, "-m", "uvicorn", "log_manager.main:app", "--host", "localhost", "--port", "9090"],
-        env=env,
-        cwd=str(PROJECT_DIR)
-    )
-    print(f"[+] Started log manager (PID: {log_proc.pid})")
+    # Try to start log manager with specific port
+    try:
+        log_proc = subprocess.Popen(
+            [python_cmd, "-m", "uvicorn", "log_manager.main:app", "--host", "localhost", "--port", "9090"],
+            env=env,
+            cwd=str(PROJECT_DIR),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        print(f"[+] Started log manager (PID: {log_proc.pid})")
+        
+        # Quick check if process is still running after a brief moment
+        time.sleep(1)
+        if log_proc.poll() is not None:
+            stdout, stderr = log_proc.communicate()
+            print(f"[!] Log manager failed to start: {stderr.decode()}")
+            log_proc = None
+    except Exception as e:
+        print(f"[!] Failed to start log manager: {e}")
+        log_proc = None
     
-    # Give services a moment to start
-    time.sleep(2)
+    # Check if any manager services failed
+    if honeypot_proc is None and log_proc is None:
+        print("[!] Warning: All manager services failed to start. This may be due to missing dependencies.")
+        print("[!] Frontend will still work, but some features may be limited.")
+    elif honeypot_proc is None or log_proc is None:
+        print("[!] Warning: Some manager services failed to start. Some features may be limited.")
+    
+    # Give remaining services a moment to start
+    time.sleep(1)
     
     print(f"\n[+] Starting frontend services for {duration_minutes} minutes...")
 
@@ -312,14 +292,6 @@ if __name__ == "__main__":
     
     print("[+] Admin privileges confirmed!")
     
-    # Simplified requirements check and installation
-    if not check_and_install_requirements():
-        print("[!] Failed to install required packages. Some features may not work correctly.")
-        choice = input("[?] Continue anyway? (y/n): ").strip().lower()
-        if choice != 'y':
-            print("[+] Exiting. Please install the required packages manually and try again.")
-            sys.exit(1)
-    
     # Session duration selection
     print("\nSelect session duration:")
     print("1. 15 minutes")
@@ -327,8 +299,15 @@ if __name__ == "__main__":
     print("3. 45 minutes")
     print("4. 60 minutes")
 
-    choice = input("Enter choice (1-4) [default=2]: ").strip() or "2"
-    durations = {"1": 15, "2": 30, "3": 45, "4": 60}
+    choice = input("Enter choice (1-4) [default=2]: ")
+
+    durations = {
+        "1": 15,
+        "2": 30,
+        "3": 45,
+        "4": 60
+    }
+
     duration = durations.get(choice, 30)  # Default to 30 minutes
 
     # Generate access token

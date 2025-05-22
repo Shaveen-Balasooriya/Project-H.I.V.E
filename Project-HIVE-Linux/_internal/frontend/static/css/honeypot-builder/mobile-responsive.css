@@ -1,0 +1,164 @@
+/* Mobile Responsiveness Enhancements */
+
+/* Base responsive adjustments */
+@media (max-width: 640px) {
+  /* Adjust section cards for small screens */
+  .section-card {
+    padding: 1rem !important;
+  }
+  
+  /* Make section titles more compact */
+  h3.font-display {
+    font-size: 1.5rem !important;
+  }
+  
+  /* Adjust section spacing */
+  .space-y-8 > * + * {
+    margin-top: 1.5rem !important;
+  }
+  
+  /* Fix input groups on small screens */
+  .flex {
+    flex-wrap: wrap;
+  }
+  
+  /* Improve spacing for stacked buttons */
+  .justify-end {
+    justify-content: center;
+  }
+  
+  /* Make the port check button full width on xs screens */
+  #check-port {
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+  
+  /* Make the port input field have rounded corners when button wraps */
+  input#port {
+    border-radius: 0.25rem;
+  }
+  
+  /* Fix button widths */
+  button[type="submit"] {
+    width: 100%;
+  }
+  
+  /* Better error message display */
+  .field-error {
+    font-size: 0.7rem;
+  }
+  
+  /* Scrollable credential container needs more height on small screens */
+  .auth-credentials-container {
+    max-height: 360px;
+  }
+}
+
+/* Small phone optimizations */
+@media (max-width: 375px) {
+  h3.font-display {
+    font-size: 1.35rem !important; 
+  }
+  
+  /* Further compress elements */
+  .p-4 {
+    padding: 0.75rem !important;
+  }
+  
+  /* Reduce text size on buttons */
+  button {
+    font-size: 0.875rem;
+  }
+}
+
+/* Fix tooltips on mobile - ensure they stay in the viewport */
+@media (max-width: 768px) {
+  .cpu-info-tooltip,
+  .memory-info-tooltip {
+    max-width: calc(100vw - 40px);
+    width: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+  }
+  
+  .form-group:focus-within .cpu-info-tooltip,
+  .form-group:focus-within .memory-info-tooltip {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Fix grid layouts on small screens */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-cols-1 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Ensure credential items stack properly */
+  .authentication-entry .grid-cols-2 {
+    gap: 0.5rem !important;
+  }
+}
+
+/* Additional fixes for form elements on mobile */
+@media (max-width: 640px) {
+  /* Better input field spacing on small screens */
+  input, select, textarea {
+    padding: 0.5rem 0.75rem !important;
+  }
+  
+  /* Ensure validation messages are visible */
+  .field-error:not(.hidden) {
+    display: block !important;
+    margin-top: 0.25rem;
+  }
+  
+  /* Fix toggle switch for resources section */
+  .toggle-slider {
+    width: 3rem;
+  }
+  
+  /* Mobile optimized form actions */
+  .form-actions-container {
+    padding: 0.75rem !important;
+  }
+}
+
+/* Fix icon sizing across the app */
+.section-card svg.h-6 {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.form-group svg.h-4, 
+.form-group svg.h-5,
+label svg.h-4, 
+label svg.h-5 {
+  height: 1rem;
+  width: 1rem;
+}
+
+/* Consistent icon sizes in buttons */
+button svg {
+  height: 1rem;
+  width: 1rem;
+}
+
+/* Fix spacing issues for fields on small screens */
+@media (max-width: 640px) {
+  .mb-6 {
+    margin-bottom: 1rem !important;
+  }
+  
+  .p-3 {
+    padding: 0.5rem !important;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 0.75rem !important;
+  }
+}

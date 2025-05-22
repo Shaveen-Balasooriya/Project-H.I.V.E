@@ -1,0 +1,76 @@
+{% extends 'base.html' %} {% block title %}Honeypot Builder | Project H.I.V.E{%
+endblock %} {% block extra_head %}
+<link
+  href="{{ url_for('static', filename='css/honeypot-builder/honeypotBuilder.css') }}"
+  rel="stylesheet"
+/>
+{% endblock %} {% block content %}
+<!-- Top gradient section with page heading moved outside the form -->
+<section class="py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+  <div class="absolute inset-0 z-0 opacity-20">
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent"
+    ></div>
+  </div>
+  <div class="max-w-7xl mx-auto relative z-10">
+    <!-- Page heading moved outside the form card -->
+    <h2 class="font-display text-6xl text-center mb-8 relative">
+      <span class="text-accent">Honeypot</span> Builder
+      <span
+        class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-accent/50"
+      ></span>
+    </h2>
+    <p class="text-white/70 text-center max-w-2xl mx-auto mb-8">
+      Design and deploy honeypots to capture threat intelligence and monitor
+      attacker behavior
+    </p>
+  </div>
+</section>
+
+<!-- Builder Form Section -->
+<section class="py-2 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <!-- Main form card with reduced border -->
+    <div
+      class="bg-black/50 border border-white rounded-lg p-8 shadow-lg shadow-black/20 transition-all hover:shadow-xl hover:shadow-accent/5"
+    >
+      <!-- Honeypot configuration form with improved accessibility -->
+      <form id="honeypot-form" class="space-y-8" aria-labelledby="form-heading">
+        <h3 id="form-heading" class="sr-only">Honeypot Configuration Form</h3>
+
+        <!-- Basic Details Section Component -->
+        {% include 'components/honeypot-builder/BasicDetails.html' %}
+
+        <!-- Resource Allocation Section Component - Now toggleable -->
+        {% include 'components/honeypot-builder/ResourceAllocation.html' %}
+
+        <!-- Authentication Section - Now visible by default -->
+        {% include 'components/honeypot-builder/AdvancedAuth.html' %}
+
+        <!-- Banner Message Section - Now visible by default -->
+        {% include 'components/honeypot-builder/AdvancedBanner.html' %}
+
+        <!-- Form Actions Component (Help section, status messages, buttons) -->
+        {% include 'components/honeypot-builder/FormActions.html' %}
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Bottom spacing -->
+<div class="py-4"></div>
+{% endblock %} {% block scripts %}
+<!-- Only include general-purpose utilities that are shared across multiple pages -->
+<script src="{{ url_for('static', filename='js/apiClient.js') }}"></script>
+
+<!-- Honeypot builder specific JS files -->
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotFormValidation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/resourceValidation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotUIHandler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotAuthValidator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotAuthHandler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotBannerValidator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotFormHandler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotVisualizations.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypot-builder/honeypotBuilder.js') }}"></script>
+{% endblock %}

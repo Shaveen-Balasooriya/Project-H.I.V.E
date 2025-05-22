@@ -1,0 +1,214 @@
+{% extends 'base.html' %} {% block title %}Services Required | Project H.I.V.E{%
+endblock %} {% block content %}
+<section
+  class="py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden min-h-screen"
+>
+  <div class="absolute inset-0 z-0 opacity-20">
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent"
+    ></div>
+  </div>
+  <div class="max-w-7xl mx-auto relative z-10">
+    <div
+      class="bg-black/50 backdrop-blur-sm border border-accent/30 rounded-lg p-8 shadow-xl"
+    >
+      <h2 class="font-display text-4xl text-center mb-8 relative">
+        <span class="text-accent">Services</span> Required
+        <span
+          class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-accent/50"
+        ></span>
+      </h2>
+
+      <div class="mb-8 text-center">
+        <p class="text-white/80 text-lg mb-6">
+          Some required services are not running. Honeypot functionality
+          requires all services to be operational.
+        </p>
+
+        <div
+          class="bg-black/30 border border-yellow-500/30 p-4 rounded-md max-w-2xl mx-auto"
+        >
+          <div class="flex items-start text-yellow-400/90">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 mr-2 mt-0.5 flex-shrink-0"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span
+              >Please start all required services before accessing the honeypot
+              functionality.</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-black/30 rounded-lg overflow-hidden mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+          <!-- Currently Running Services -->
+          <div class="bg-black/50 p-4 rounded border border-green-500/20">
+            <h3
+              class="text-lg font-semibold text-green-400 mb-3 flex items-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Running Services
+            </h3>
+            <ul class="space-y-2">
+              {% if services_info.running|length > 0 %} {% for service in
+              services_info.running %}
+              <li class="flex items-center text-white/80">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-2 text-green-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                {{ service }}
+              </li>
+              {% endfor %} {% else %}
+              <li class="text-white/60">No services are currently running</li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- Missing Services -->
+          <div class="bg-black/50 p-4 rounded border border-red-500/20">
+            <h3
+              class="text-lg font-semibold text-red-400 mb-3 flex items-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Missing Services
+            </h3>
+            <ul class="space-y-2">
+              {% if services_info.missing|length > 0 %} {% for service in
+              services_info.missing %}
+              <li class="flex items-center text-white/80">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-2 text-red-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                {{ service }}
+              </li>
+              {% endfor %} {% else %}
+              <li class="text-white/60">All required services are running</li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a
+          href="/services"
+          class="glow-button px-6 py-3 rounded font-medium transition-all duration-300"
+          style="
+            background-color: #ff3d4c;
+            color: #ffffff !important;
+            border: none;
+            display: inline-block;
+            text-decoration: none;
+          "
+        >
+          Go to Services Manager
+        </a>
+        <button
+          id="check-services-btn"
+          class="flex items-center px-6 py-3 bg-black/60 border border-white/30 rounded text-white hover:bg-black/70 hover:border-white transition-all duration-300 font-medium"
+        >
+          Check Services Again
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const checkServicesBtn = document.getElementById("check-services-btn");
+    const redirectTo = "{{ redirect_to }}";
+
+    if (checkServicesBtn) {
+      checkServicesBtn.addEventListener("click", function () {
+        // Show loading overlay if available
+        if (window.loadingOverlay) {
+          window.loadingOverlay.show("Checking services...");
+        }
+
+        // Check services status
+        fetch("/api/service/list")
+          .then((response) => response.json())
+          .then((data) => {
+            const requiredServices = [
+              "hive-opensearch-node",
+              "hive-nats-server",
+              "hive-log-collector",
+              "hive-opensearch-dash",
+            ];
+
+            const missingServices = requiredServices.filter(
+              (s) => !data.includes(s)
+            );
+
+            if (missingServices.length === 0) {
+              // All services are running, redirect
+              window.location.href = redirectTo;
+            } else {
+              // Refresh the page to show updated status
+              window.location.reload();
+            }
+          })
+          .catch((error) => {
+            console.error("Error checking services:", error);
+            // Hide loading overlay on error
+            if (window.loadingOverlay) {
+              window.loadingOverlay.hide();
+            }
+            alert("Error checking services. Please try again.");
+          });
+      });
+    }
+  });
+</script>
+{% endblock %}

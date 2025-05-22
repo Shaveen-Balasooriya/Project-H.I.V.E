@@ -1,0 +1,39 @@
+# Honeypot Configurations
+# This file defines the configuration for each type of honeypot
+# Add new honeypot types by creating a new top-level entry
+
+ssh:
+  ports:
+    "22/tcp": "honeypot_port"
+  volumes: 
+    - "logs"
+  passive_ports: null
+  description: "SSH honeypot for capturing login attempts"
+
+ftp:
+  ports:
+    "21/tcp": "honeypot_port"
+  volumes: 
+    - "malware"
+    - "logs"
+  passive_ports:
+    - 60000
+    - 60100
+  description: "FTP honeypot with secure file quarantine"
+
+http:
+  ports:
+    "80/tcp": "honeypot_port"
+  volumes:
+    - "logs"
+  description: "HTTP honeypot for capturing web-based attacks"
+
+# Example of how to add a new honeypot type:
+# http:
+#   ports:
+#     "80/tcp": "honeypot_port"
+#   volumes:
+#     - "www"
+#     - "logs"
+#   passive_ports: null
+#   description: "HTTP honeypot for capturing web-based attacks"
