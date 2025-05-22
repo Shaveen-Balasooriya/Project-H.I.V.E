@@ -69,8 +69,9 @@ def main() -> None:
     logger.info(f"NATS Configuration: URL={nats_url}, Stream={nats_stream}, Subject={nats_subject}")
     logger.info(f"Honeypot type: {honeypot_type}")
     
+    # Use standard SSH port for containerized deployment
     ip_address = "0.0.0.0"
-    port = 22
+    port = 22  # Changed from 2222 to standard SSH port 22 for containerization
 
     try:
         # Load configuration
