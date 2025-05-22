@@ -34,9 +34,10 @@ class ServiceOrchestrator:
     def start_all(self) -> None:
         if self.opensearch.status() != "running":
             self.opensearch.start()
+        time.sleep(20)
         if self.nats.status() != "running":
             self.nats.start()
-        time.sleep(5)
+        time.sleep(20)
         if self.collector.status() != "running":
             self.collector.start()
 

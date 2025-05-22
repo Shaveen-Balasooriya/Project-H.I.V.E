@@ -252,10 +252,59 @@
     const createServiceBtn = document.getElementById("create-service-btn");
     if (createServiceBtn) {
       createServiceBtn.addEventListener("click", function () {
-        const adminPassword = prompt(
-          "Enter admin password to create services:"
+        // Password validation function
+        function validatePassword(password) {
+          const result = { isValid: true, errors: [] };
+
+          // Check for minimum length
+          if (!password || password.length < 10) {
+            result.isValid = false;
+            result.errors.push("Password must be at least 10 characters long");
+          }
+
+          // Check for at least one number
+          if (!/\d/.test(password)) {
+            result.isValid = false;
+            result.errors.push("Password must contain at least one number");
+          }
+
+          // Check for at least one special character (excluding problematic ones)
+          if (!/[!@#%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+            result.isValid = false;
+            result.errors.push(
+              "Password must contain at least one special character"
+            );
+          }
+
+          // Check for problematic CLI characters
+          const problematicChars = ["$", "`", "~"];
+          for (const char of problematicChars) {
+            if (password.includes(char)) {
+              result.isValid = false;
+              result.errors.push(
+                `Password contains the problematic character: ${char}`
+              );
+            }
+          }
+
+          return result;
+        }
+
+        let adminPassword = prompt(
+          "Enter admin password to create services:\n\nRequirements:\n- At least 10 characters\n- Contains at least one number\n- Contains at least one special character\n- Excludes $, `, and ~ characters"
         );
+
         if (!adminPassword) return;
+
+        // Validate the password
+        const validation = validatePassword(adminPassword);
+
+        if (!validation.isValid) {
+          alert(
+            "Password validation failed:\n\n" + validation.errors.join("\n")
+          );
+          return;
+        }
 
         // Create the services using the global instance
         if (window.serviceActions) {
