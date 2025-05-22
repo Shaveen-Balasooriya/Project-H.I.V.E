@@ -1,0 +1,171 @@
+{% extends 'base.html' %} {% block title %}Login | Project H.I.V.E{% endblock %}
+{% block extra_head %}
+<style>
+  .glow-button {
+    background-color: #ff3d4c;
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .glow-button:hover {
+    box-shadow: 0 0 15px rgba(255, 61, 76, 0.5);
+    transform: translateY(-2px);
+  }
+
+  .login-card {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 61, 76, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+  }
+
+  .login-card:hover {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 61, 76, 0.2);
+    border-color: rgba(255, 61, 76, 0.5);
+  }
+
+  .honeycomb-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("{{ url_for('static', filename='assets/images/honeycomb-pattern.svg') }}");
+    background-size: 300px;
+    opacity: 0.1;
+    z-index: -1;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Top gradient section with page heading -->
+<section class="py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+  <div class="absolute inset-0 z-0 opacity-20">
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent"
+    ></div>
+  </div>
+
+  <div class="honeycomb-bg"></div>
+
+  <div class="max-w-7xl mx-auto relative z-10">
+    <!-- Page heading -->
+    <h2 class="font-display text-6xl text-center mb-6 relative">
+      <span class="text-accent">Project</span> H.I.V.E
+      <span
+        class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-accent/50"
+      ></span>
+    </h2>
+    <p class="text-white/70 text-center max-w-2xl mx-auto">
+      Honeypot Infrastructure for Vulnerability Evaluation
+    </p>
+  </div>
+</section>
+
+<!-- Login Form Section -->
+<section class="py-4 px-4 sm:px-6 lg:px-8 relative">
+  <div class="max-w-md mx-auto">
+    {% if expired %}
+    <div
+      class="bg-danger/20 border border-danger text-white p-4 rounded-lg mb-6"
+    >
+      <p class="flex items-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 mr-2 text-danger"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        Your session has expired. Please enter a new token to continue.
+      </p>
+    </div>
+    {% endif %}
+
+    <div class="login-card rounded-lg overflow-hidden">
+      <!-- Card Header -->
+      <div class="bg-accent/80 p-4">
+        <h3 class="font-display text-2xl text-white text-center">
+          Authentication Required
+        </h3>
+      </div>
+
+      <!-- Card Body -->
+      <div class="p-6">
+        <div class="bg-black/30 border border-accent/20 rounded-md p-4 mb-6">
+          <p class="text-white/80 text-sm flex items-start">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 mr-2 text-accent flex-shrink-0"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span
+              >Please enter your authentication token to access the system. This
+              token is provided by your system administrator.</span
+            >
+          </p>
+        </div>
+
+        <form action="{{ url_for('access') }}" method="GET">
+          <div class="mb-5">
+            <label
+              for="token"
+              class="block text-white font-medium mb-2 flex items-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mr-2 text-accent/70"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Access Token
+            </label>
+            <input
+              type="text"
+              id="token"
+              name="token"
+              placeholder="Enter your access token"
+              required
+              class="w-full bg-black/60 border border-accent/30 rounded px-4 py-3 text-white focus:border-accent transition-all duration-200 focus-visible"
+            />
+          </div>
+
+          <div class="text-center mt-6">
+            <button
+              type="submit"
+              class="glow-button px-8 py-3 rounded-md font-medium text-lg shadow-lg"
+            >
+              AUTHENTICATE
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="text-center mt-6 text-white/50 text-sm">
+      <p>Secure access to Project H.I.V.E control systems</p>
+      <p>&copy; 2025 Project H.I.V.E</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

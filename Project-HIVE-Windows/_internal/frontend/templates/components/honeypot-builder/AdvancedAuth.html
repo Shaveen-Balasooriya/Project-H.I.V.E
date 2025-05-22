@@ -1,0 +1,117 @@
+<!-- Authentication Section -->
+<div class="section-card hover:shadow-md transition-shadow duration-300">
+  <!-- Authentication section title -->
+  <h3 class="font-display text-3xl text-accent flex items-center mb-6">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-6 w-6 mr-2"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+      />
+    </svg>
+    Authentication
+  </h3>
+
+  <!-- Help text for authentication with requirements clearly visible -->
+  <div
+    class="mb-6 bg-black/20 text-white/70 p-3 border-l-4 border-accent/60 rounded"
+  >
+    <p class="mb-2">
+      Configure credentials that attackers can use to access your honeypot.
+      These will be tracked to monitor attacker behavior.
+    </p>
+    <div class="text-sm text-white/80">
+      <p><span class="text-accent font-medium">Requirements:</span></p>
+      <ul class="list-disc ml-5 mt-1 space-y-1">
+        <li>Usernames and passwords must be 4-10 characters</li>
+        <li>Minimum 3 credential pairs required</li>
+        <li>Maximum 10 credential pairs allowed</li>
+        <li>No duplicate credential pairs</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- New configuration notice -->
+  <div class="mb-6 bg-black/30 p-3 border border-yellow-500/30 rounded-md">
+    <p class="flex items-start text-yellow-400/90">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <span class="text-sm">
+        <strong class="font-medium">Important:</strong> These credentials are
+        loaded from existing configurations. Any changes you make will affect
+        <span class="underline">all</span> honeypots of this type.
+      </span>
+    </p>
+  </div>
+
+  <!-- Centralized errors for auth section -->
+  <div id="auth-errors" class="hidden"></div>
+
+  <!-- Authentication container with scrolling - now with clearer visual indication -->
+  <div class="mb-2 text-sm text-white/70 flex items-center justify-between">
+    <div class="flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4 mr-1 text-accent/70"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      Credential pairs
+    </div>
+    <!-- Credential counter display -->
+    <span id="credential-counter" class="text-white/50 text-sm font-mono"
+      >3/10 pairs</span
+    >
+  </div>
+  <div class="auth-credentials-container">
+    <div id="authentication-container" class="space-y-4">
+      <!-- Credential entries will be inserted here by JavaScript -->
+    </div>
+  </div>
+
+  <!-- Add credential button - centered with flex -->
+  <div class="flex justify-center mt-3">
+    <button
+      type="button"
+      id="add-credential"
+      class="flex items-center px-4 py-2 text-white bg-accent hover:bg-accent/80 rounded transition-all duration-200 border border-accent/30"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 mr-1"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      Add Credential
+    </button>
+  </div>
+</div>

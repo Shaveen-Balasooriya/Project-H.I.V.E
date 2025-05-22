@@ -1,0 +1,199 @@
+/* Loading Overlay Styles */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+  opacity: 1;
+  visibility: visible;
+}
+
+.loading-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 80%;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Hexagonal loading animation */
+.loading-hexagon {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  margin-bottom: 2rem;
+  animation: floatAnimation 3s ease-in-out infinite;
+}
+
+.loading-hexagon svg {
+  width: 100%;
+  height: 100%;
+  animation: rotate 8s linear infinite;
+}
+
+.hexagon-outline {
+  stroke-dasharray: 350;
+  stroke-dashoffset: 350;
+  animation: draw 3s ease-in-out infinite alternate;
+}
+
+.hexagon-fill {
+  animation: pulse 2s ease-in-out infinite alternate;
+}
+
+.loading-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40%;
+  height: 40%;
+  background-color: rgba(255, 61, 76, 0.6);
+  border-radius: 50%;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Text styles */
+.loading-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loading-title {
+  font-family: 'Iceland', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #ff3d4c;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 15px rgba(255, 61, 76, 0.5);
+  animation: glowAnimation 2s ease-in-out infinite alternate;
+}
+
+.loading-message {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  color: white;
+  opacity: 0.8;
+  max-width: 400px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Animations */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes draw {
+  0% {
+    stroke-dashoffset: 350;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    fill-opacity: 0.1;
+  }
+  100% {
+    fill-opacity: 0.3;
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.4;
+    box-shadow: 0 0 10px 2px rgba(255, 61, 76, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 20px 5px rgba(255, 61, 76, 0.6);
+  }
+  100% {
+    opacity: 0.4;
+    box-shadow: 0 0 10px 2px rgba(255, 61, 76, 0.4);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 0.8;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatAnimation {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes glowAnimation {
+  0% {
+    text-shadow: 0 0 10px rgba(255, 61, 76, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 20px rgba(255, 61, 76, 0.8), 0 0 30px rgba(255, 61, 76, 0.4);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .loading-hexagon {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .loading-title {
+    font-size: 1.8rem;
+  }
+  
+  .loading-message {
+    font-size: 0.9rem;
+  }
+}
