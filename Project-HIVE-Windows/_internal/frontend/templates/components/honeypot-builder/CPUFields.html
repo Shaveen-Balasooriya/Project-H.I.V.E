@@ -1,0 +1,171 @@
+<!-- CPU Period with tooltip and CPU icon -->
+<div class="form-group relative group">
+  <!-- CPU Period tooltip moved above the field -->
+  <div class="cpu-info-tooltip">
+    <div class="tooltip-header">CPU Period</div>
+    <div class="tooltip-body">
+      <div class="tooltip-visual">
+        <!-- Improved timeline visualization -->
+        <div class="timeline">
+          <div class="time-marker start">50000μs</div>
+          <div class="time-marker middle">125000μs</div>
+          <div class="time-marker end">200000μs</div>
+        </div>
+        <div class="period-bar">
+          <!-- Will be filled by JS -->
+        </div>
+      </div>
+      <p>
+        The CPU period defines the time window (in microseconds) for CPU quota
+        allocation. Default is 100000μs (100ms).
+      </p>
+      <p class="tooltip-note">Higher values = longer scheduling cycles</p>
+    </div>
+  </div>
+
+  <label
+    for="cpu_period"
+    class="block text-white font-medium mb-2 flex items-center"
+  >
+    <!-- Added CPU icon -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-4 w-4 mr-1 text-accent/70"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path d="M13 7H7v6h6V7z" />
+      <path
+        fill-rule="evenodd"
+        d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    CPU Period
+    <span
+      class="ml-1 cursor-help group-hover:text-accent tooltip-trigger"
+      aria-label="CPU period in microseconds"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </span>
+  </label>
+  <input
+    type="number"
+    id="cpu_period"
+    name="cpu_period"
+    value="100000"
+    min="50000"
+    max="200000"
+    step="1000"
+    placeholder="Enter value between 50,000-200,000"
+    class="w-full bg-black/60 border border-accent/30 rounded px-4 py-3 text-white focus:border-accent transition-all duration-200 focus-visible"
+    aria-describedby="cpu-period-help cpu-period-status"
+    onfocus="this.parentElement.classList.add('showing-tooltip')"
+  />
+  <div id="cpu-period-status" class="field-error hidden"></div>
+  <div id="cpu-period-help" class="text-white/50 text-xs mt-1">
+    Range: 50,000-200,000 (Default: 100000) - Enter any value, we'll validate
+    when you're done
+  </div>
+</div>
+
+<!-- CPU Quota with tooltip and graph icon -->
+<div class="form-group relative group">
+  <!-- CPU Quota tooltip moved above the field -->
+  <div class="cpu-info-tooltip">
+    <div class="tooltip-header">CPU Quota</div>
+    <div class="tooltip-body">
+      <div class="tooltip-visual">
+        <!-- Bar visualization instead of pie chart -->
+        <div class="timeline">
+          <div class="time-marker start">0%</div>
+          <div class="time-marker middle">50%</div>
+          <div class="time-marker end">100%</div>
+        </div>
+        <div class="quota-bar">
+          <!-- Will be filled by JS -->
+        </div>
+        <div class="quota-percentage">50%</div>
+      </div>
+      <p>
+        The CPU quota defines how much CPU time (in microseconds) the honeypot
+        can use within each period.
+      </p>
+      <p class="tooltip-note">Default: 50000μs (50% of one CPU core)</p>
+      <div class="quota-equation">
+        <span>CPU %</span>
+        <span>=</span>
+        <span class="fraction">
+          <span class="numerator">Quota</span>
+          <span class="divider"></span>
+          <span class="denominator">Period</span>
+        </span>
+        <span>× 100</span>
+      </div>
+    </div>
+  </div>
+
+  <label
+    for="cpu_quota"
+    class="block text-white font-medium mb-2 flex items-center"
+  >
+    <!-- Added graph/allocation icon -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-4 w-4 mr-1 text-accent/70"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path
+        d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"
+      />
+    </svg>
+    CPU Quota
+    <span
+      class="ml-1 cursor-help group-hover:text-accent tooltip-trigger"
+      aria-label="CPU quota in microseconds"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </span>
+  </label>
+  <input
+    type="number"
+    id="cpu_quota"
+    name="cpu_quota"
+    value="50000"
+    min="10000"
+    max="100000"
+    step="1000"
+    placeholder="Enter value between 10,000-100,000"
+    class="w-full bg-black/60 border border-accent/30 rounded px-4 py-3 text-white focus:border-accent transition-all duration-200 focus-visible"
+    aria-describedby="cpu-quota-help cpu-quota-status"
+    onfocus="this.parentElement.classList.add('showing-tooltip')"
+  />
+  <div id="cpu-quota-status" class="field-error hidden"></div>
+  <div id="cpu-quota-help" class="text-white/50 text-xs mt-1">
+    Range: 10,000-100,000 (Default: 50000) - Must be less than or equal to CPU
+    Period
+  </div>
+</div>

@@ -1,0 +1,347 @@
+{% extends 'base.html' %} {% block title %}Honeypot Manager | Project H.I.V.E{%
+endblock %} {% block extra_head %}
+<link
+  href="{{ url_for('static', filename='css/honeypots/honeypotsList.css') }}"
+  rel="stylesheet"
+/>
+{% endblock %} {% block content %}
+<!-- Top gradient section with page heading -->
+<section class="py-4 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+  <div class="absolute inset-0 z-0 opacity-20">
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent"
+    ></div>
+  </div>
+  <div class="max-w-7xl mx-auto relative z-10">
+    <!-- Page heading -->
+    <h2 class="font-display text-6xl text-center mb-4 relative">
+      <span class="text-accent">Honeypot</span> Manager
+      <span
+        class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-accent/50"
+      ></span>
+    </h2>
+    <p class="text-white/70 text-center max-w-2xl mx-auto">
+      Manage your running honeypot containers and monitor their status
+    </p>
+  </div>
+</section>
+
+<!-- Main honeypots content -->
+<section class="py-6 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Control bar with filters, sorting, and actions -->
+    <div
+      class="control-bar mb-8 bg-black/30 border border-accent/10 rounded-lg p-5"
+    >
+      <!-- Single line for filters, sorting and actions -->
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <!-- Left side: Filter controls with improved styling -->
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="filter-group flex flex-wrap items-center gap-3">
+            <!-- Type filter -->
+            <div class="filter-control">
+              <label
+                for="type-filter"
+                class="text-white/80 text-sm font-medium mb-1 block"
+                >Filter by Type</label
+              >
+              <select
+                id="type-filter"
+                class="filter-select bg-black/60 border border-white/30 rounded text-white py-2 px-3 text-sm min-w-[140px] focus:border-accent focus:ring-1 focus:ring-accent"
+              >
+                <option value="all">All Types</option>
+                <option value="loading" disabled>Loading...</option>
+              </select>
+            </div>
+
+            <!-- Status filter -->
+            <div class="filter-control">
+              <label
+                for="status-filter"
+                class="text-white/80 text-sm font-medium mb-1 block"
+                >Filter by Status</label
+              >
+              <select
+                id="status-filter"
+                class="filter-select bg-black/60 border border-white/30 rounded text-white py-2 px-3 text-sm min-w-[140px] focus:border-accent focus:ring-1 focus:ring-accent"
+              >
+                <option value="all">All Status</option>
+                <option value="running">Running</option>
+                <option value="created">Created</option>
+                <option value="exited">Stopped</option>
+              </select>
+            </div>
+
+            <!-- Sort dropdown -->
+            <div class="filter-control">
+              <label
+                for="honeypot-sort"
+                class="text-white/80 text-sm font-medium mb-1 block"
+                >Sort by</label
+              >
+              <select
+                id="honeypot-sort"
+                class="filter-select bg-black/60 border border-white/30 rounded text-white py-2 px-3 text-sm min-w-[180px] focus:border-accent focus:ring-1 focus:ring-accent"
+              >
+                <option value="status">Status (Running first)</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="type-asc">Type (A-Z)</option>
+                <option value="type-desc">Type (Z-A)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right side: Actions -->
+        <div class="flex items-center gap-3">
+          <!-- Refresh button - restore original styling -->
+          <button
+            id="refresh-honeypots"
+            class="refresh-btn flex items-center px-4 py-2 bg-black/60 border border-white/30 rounded text-white hover:bg-black/70 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh
+          </button>
+
+          <!-- Create new honeypot button - make sure it uses the accent color -->
+          <a
+            href="/honeypot-builder"
+            class="new-honeypot-btn flex items-center px-5 py-2 text-white rounded-md font-medium"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="white"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            New Honeypot
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading-indicator" class="py-12 text-center">
+      <svg
+        class="animate-spin h-12 w-12 mx-auto text-accent/70"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      <p class="text-white/70 mt-4">Loading honeypots...</p>
+    </div>
+
+    <!-- Error message -->
+    <div id="error-container" class="hidden py-8 text-center">
+      <div
+        class="bg-red-500/20 border border-red-500/30 text-red-400 p-6 rounded max-w-xl mx-auto"
+      >
+        <svg
+          class="h-12 w-12 mx-auto mb-4"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+        <h3 class="text-xl font-medium mb-2">Failed to Load Honeypots</h3>
+        <p class="error-message mb-4">
+          An error occurred while loading honeypots. Please try again.
+        </p>
+        <button
+          id="retry-load"
+          onclick="window.honeypotsList.refreshList()"
+          class="px-4 py-2 bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 rounded text-red-400"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 inline mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Try Again
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-container" class="hidden py-12 text-center">
+      <svg
+        class="h-16 w-16 text-white/30 mx-auto mb-6"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1"
+          d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+        />
+      </svg>
+      <h3 class="text-2xl font-display text-white mb-4">No Honeypots Found</h3>
+      <p class="text-white/70 mb-6">You haven't deployed any honeypots yet.</p>
+      <a
+        href="/honeypot-builder"
+        class="px-4 py-2 bg-accent text-white rounded hover:bg-accent/80 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 inline mr-1"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        Create Your First Honeypot
+      </a>
+    </div>
+
+    <!-- Empty state after filtering -->
+    <div id="empty-filtered-container" class="hidden py-12 text-center">
+      <svg
+        class="h-12 w-12 text-white/30 mx-auto mb-4"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1"
+          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+        />
+      </svg>
+      <h3 class="text-xl font-display text-white mb-2">
+        No Matching Honeypots
+      </h3>
+      <p class="empty-message text-white/70 mb-4">
+        No honeypots match your current filter.
+      </p>
+      <button
+        onclick="document.querySelector('[data-filter=\'all\']').click()"
+        class="px-3 py-1 bg-accent/80 text-white rounded hover:bg-accent transition-colors"
+      >
+        Show All Honeypots
+      </button>
+    </div>
+
+    <!-- Honeypots container -->
+    <div id="honeypots-container" class="hidden">
+      <!-- Honeypot cards will be inserted here by JavaScript -->
+    </div>
+
+    <!-- Notifications container -->
+    <div
+      id="notification-container"
+      class="fixed bottom-4 right-4 z-50 space-y-4"
+    >
+      <!-- Notifications will be inserted here by JavaScript -->
+    </div>
+  </div>
+</section>
+
+<!-- Bottom spacing -->
+<div class="py-4"></div>
+{% endblock %} {% block scripts %}
+<!-- Include API client -->
+<script src="{{ url_for('static', filename='js/apiClient.js') }}"></script>
+
+<!-- Honeypots specific JS files -->
+<script src="{{ url_for('static', filename='js/honeypots/honeypotsList.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypots/honeypotActions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypots/honeypotUI.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypots/honeypotMain.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypots/honeypotStats.js') }}"></script>
+<script src="{{ url_for('static', filename='js/honeypots/honeypotFilters.js') }}"></script>
+
+<!-- Check for limit_reached parameter -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("limit_reached") === "true") {
+      // Show notification that limit is reached
+      setTimeout(() => {
+        if (
+          window.honeypotUI &&
+          typeof window.honeypotUI.showNotification === "function"
+        ) {
+          window.honeypotUI.showNotification(
+            "Maximum limit of 5 honeypots reached. Please delete an existing honeypot before creating a new one.",
+            "warning",
+            10000
+          );
+        } else {
+          // Fallback if the UI module isn't loaded
+          alert(
+            "Maximum limit of 5 honeypots reached. Please delete an existing honeypot before creating a new one."
+          );
+        }
+      }, 500); // Small delay to ensure UI is ready
+
+      // Remove the parameter from URL to prevent showing the message on refresh
+      const url = new URL(window.location);
+      url.searchParams.delete("limit_reached");
+      window.history.replaceState({}, "", url);
+    }
+  });
+</script>
+{% endblock %}

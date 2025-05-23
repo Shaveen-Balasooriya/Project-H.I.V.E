@@ -1,0 +1,88 @@
+<div class="section-card hover:shadow-md transition-shadow duration-300">
+  <!-- Resource allocation title with toggle checkbox -->
+  <div class="flex justify-between items-center mb-6">
+    <h3 class="font-display text-3xl text-accent flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6 mr-2"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+      Resource Allocation
+      <span class="text-sm font-sans text-white/60 ml-4 font-normal"
+        >(Optional)</span
+      >
+    </h3>
+
+    <!-- Toggle for resource allocation with text separated -->
+    <div class="flex items-center">
+      <!-- Just the toggle switch in the label -->
+      <label class="flex items-center cursor-pointer">
+        <input type="checkbox" id="show-resources" class="hidden" />
+        <div class="toggle-switch flex items-center">
+          <div class="toggle-slider w-12 h-6 bg-white/10 rounded-full relative">
+            <div
+              class="toggle-knob absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all"
+            ></div>
+          </div>
+        </div>
+      </label>
+
+      <!-- Text is now outside the label, not clickable -->
+      <span class="ml-3 text-white font-medium flex items-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 mr-1 text-accent"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        Show Configuration
+      </span>
+    </div>
+  </div>
+
+  <!-- Help text -->
+  <div
+    class="mb-6 bg-black/20 text-white/70 p-3 border-l-4 border-accent/60 rounded"
+  >
+    <p>
+      Configure system resources for your honeypot. Default values are
+      recommended for most deployments. Note that CPU quota must be less than or
+      equal to CPU period, and memory swap limit must be greater than or equal
+      to memory limit.
+    </p>
+  </div>
+
+  <!-- Resource configuration fields - initially hidden -->
+  <div id="resource-fields" class="hidden space-y-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {% include 'components/honeypot-builder/CPUFields.html' %} {% include
+      'components/honeypot-builder/MemoryFields.html' %}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Simple toggle switch styles */
+  input[type="checkbox"]:checked + .toggle-switch .toggle-slider {
+    background-color: rgba(255, 61, 76, 0.4);
+  }
+
+  input[type="checkbox"]:checked + .toggle-switch .toggle-knob {
+    transform: translateX(24px);
+  }
+</style>

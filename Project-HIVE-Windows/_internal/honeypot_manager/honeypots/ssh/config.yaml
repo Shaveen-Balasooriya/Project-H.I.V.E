@@ -1,0 +1,16 @@
+authentication:
+  allowed_users:
+  - username: admin
+    password: admin
+  - username: root
+    password: root
+  - username: user
+    password: user
+banner: '*** NOTICE ***
+
+  Unauthorised access is prohibited.
+
+  All activity is logged and monitored.
+
+  Use of this system implies consent to monitoring.'
+ssh_key_path: ssh_host_rsa_key

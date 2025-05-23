@@ -1,0 +1,19 @@
+# Updated Dockerfile.subscriber
+
+# Use a lightweight Python base image
+FROM python:3.12-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY Logger_Subscriber.py /app/Logger_Subscriber.py
+
+# Copy GeoLite2 Database
+COPY GeoLite2-City.mmdb /app/GeoLite2-City.mmdb
+
+# Install required Python packages
+RUN pip install nats-py geoip2 opensearch-py
+
+# Run the subscriber
+CMD ["python", "Logger_Subscriber.py"]

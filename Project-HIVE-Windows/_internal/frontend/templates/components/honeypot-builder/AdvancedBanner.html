@@ -1,0 +1,111 @@
+<!-- Banner Message Section -->
+<div class="section-card hover:shadow-md transition-shadow duration-300">
+  <h3 class="font-display text-3xl mb-6 text-accent flex items-center">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-6 w-6 mr-2"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+      />
+    </svg>
+    Banner Message
+  </h3>
+
+  <!-- Help text for banner with requirements clearly visible -->
+  <div
+    class="mb-6 bg-black/20 text-white/70 p-3 border-l-4 border-accent/60 rounded"
+  >
+    <p class="mb-2">
+      Custom message displayed when attackers connect to the honeypot.
+    </p>
+    <div class="text-sm text-white/80">
+      <p><span class="text-accent font-medium">Requirements:</span></p>
+      <ul class="list-disc ml-5 mt-1 space-y-1">
+        <li>Maximum 100 characters per line</li>
+        <li>Maximum 4 lines total</li>
+        <li>Minimum 10 non-whitespace characters</li>
+        <li>
+          Disallowed characters: \, `, ", ', ;, &, $, and control characters
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- New configuration notice -->
+  <div class="mb-6 bg-black/30 p-3 border border-yellow-500/30 rounded-md">
+    <p class="flex items-start text-yellow-400/90">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <span class="text-sm">
+        <strong class="font-medium">Important:</strong> Banner text is loaded
+        from existing configurations. Any changes you make will affect
+        <span class="underline">all</span> honeypots of this type.
+      </span>
+    </p>
+  </div>
+
+  <div>
+    <div class="flex justify-between items-center mb-2">
+      <label
+        for="banner"
+        class="block text-white font-medium flex items-center"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 mr-1 text-accent/70"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        Banner Message
+      </label>
+
+      <!-- Fix the stats display to correctly show 10+ chars instead of 100+ -->
+      <span id="banner-stats" class="text-white/50 text-sm font-mono"
+        >0/4 lines, 0/100 chars</span
+      >
+    </div>
+
+    <textarea
+      id="banner"
+      name="banner"
+      rows="4"
+      placeholder="Welcome message shown to attackers"
+      class="w-full bg-black/60 border border-accent/30 rounded px-4 py-3 text-white focus:border-accent transition-all duration-200 focus-visible"
+    ></textarea>
+
+    <!-- Error message container for banner validation errors -->
+    <div id="banner-error" class="field-error hidden mt-2"></div>
+
+    <!-- Keep only the tip, remove duplicated constraints -->
+    <div class="text-white/50 text-xs mt-2">
+      <div>
+        <span class="text-accent font-medium mr-1">Tip:</span>
+        Use \n for line breaks. Example: Welcome to Server\nAuthorized access
+        only
+      </div>
+    </div>
+  </div>
+</div>
