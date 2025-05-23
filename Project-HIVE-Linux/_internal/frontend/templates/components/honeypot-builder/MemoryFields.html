@@ -1,0 +1,224 @@
+<!-- Memory Limit with styled select and memory icon -->
+<div class="form-group relative group tooltip-parent">
+  <!-- Memory tooltip moved above the field -->
+  <div class="memory-info-tooltip">
+    <div class="tooltip-header">Memory Limit</div>
+    <div class="tooltip-body">
+      <div class="tooltip-visual">
+        <div class="memory-container">
+          <div class="memory-ram-visual">
+            <div class="ram-chips">
+              <div class="ram-chip"></div>
+              <div class="ram-chip"></div>
+              <div class="ram-chip"></div>
+              <div class="ram-chip"></div>
+            </div>
+            <div class="ram-usage">
+              <div class="ram-usage-label">512 MB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>
+        The maximum amount of RAM the honeypot container can use. Allocating
+        sufficient memory ensures the service runs properly.
+      </p>
+      <p class="tooltip-note">
+        Default: 512 MB (recommended for most honeypot types)
+      </p>
+    </div>
+  </div>
+
+  <label
+    for="memory_limit"
+    class="block text-white font-medium mb-2 flex items-center"
+  >
+    <!-- Added memory icon -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-4 w-4 mr-1 text-accent/70"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path d="M13 6H7v6h6V6z" />
+      <path
+        fill-rule="evenodd"
+        d="M7 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 00-1-1h-2a1 1 0 00-1 1v1H8V3a1 1 0 00-1-1H7zm1 3V4h4v1h1a1 1 0 011 1v8a1 1 0 01-1 1H7a1 1 0 01-1-1V6a1 1 0 011-1h1z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    Memory Limit
+    <span class="ml-1 text-white/50 text-xs">(RAM)</span>
+    <span
+      class="ml-1 cursor-help group-hover:text-accent"
+      aria-label="Memory limit in megabytes"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </span>
+  </label>
+
+  <!-- Select input remains unchanged -->
+  <div class="relative">
+    <select
+      id="memory_limit"
+      name="memory_limit"
+      class="w-full bg-black/60 border border-accent/30 rounded px-4 py-3 text-white appearance-none focus:border-accent transition-all duration-200 focus-visible uppercase stable-dimensions"
+      aria-describedby="memory-status"
+      onchange="window.honeypotVisualizations && window.honeypotVisualizations.updateMemoryVisualizations()"
+      onfocus="this.parentElement.parentElement.classList.add('showing-tooltip')"
+    >
+      <option value="64m">64 MB</option>
+      <option value="128m">128 MB</option>
+      <option value="256m">256 MB</option>
+      <option value="512m" selected>512 MB</option>
+      <option value="768m">768 MB</option>
+      <option value="1024m">1024 MB</option>
+    </select>
+    <div
+      class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-accent"
+    >
+      <svg
+        class="h-5 w-5"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </div>
+  </div>
+  <div id="memory-status" class="field-error hidden"></div>
+  <div class="text-white/50 text-xs mt-1">Range: 64MB - 1024MB</div>
+</div>
+
+<!-- Memory Swap Limit with styled select and memory-swap icon -->
+<div class="form-group relative group tooltip-parent">
+  <!-- Memory swap tooltip moved above the field -->
+  <div class="memory-info-tooltip">
+    <div class="tooltip-header">Memory Swap Limit</div>
+    <div class="tooltip-body">
+      <div class="tooltip-visual">
+        <div class="memory-swap-visual">
+          <div class="memory-blocks">
+            <div class="memory-block ram-block">
+              <div class="block-label">RAM</div>
+              <div class="block-value memory-value">512 MB</div>
+            </div>
+            <div class="memory-block swap-block">
+              <div class="block-label">SWAP</div>
+              <div class="block-value swap-value">0 MB</div>
+            </div>
+          </div>
+          <div class="memory-total">
+            <div class="total-label">Total:</div>
+            <div class="total-value">512 MB</div>
+          </div>
+        </div>
+      </div>
+      <p>
+        The combined RAM and swap space available to the container. When RAM is
+        filled, the system can use swap space (slower disk-based memory).
+      </p>
+      <p class="tooltip-note">
+        Setting this equal to Memory Limit disables swap usage.
+      </p>
+      <div class="swap-equation">
+        <span>SWAP =</span>
+        <span class="swap-value">Memory Swap</span>
+        <span>−</span>
+        <span class="memory-value">Memory</span>
+      </div>
+    </div>
+  </div>
+
+  <label
+    for="memory_swap_limit"
+    class="block text-white font-medium mb-2 flex items-center"
+  >
+    <!-- Added memory-swap icon -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-4 w-4 mr-1 text-accent/70"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    Memory Swap Limit
+    <span class="ml-1 text-white/50 text-xs">(RAM + swap)</span>
+    <span
+      class="ml-1 cursor-help group-hover:text-accent"
+      aria-label="Memory swap limit in megabytes"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1a1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </span>
+  </label>
+
+  <div class="relative">
+    <select
+      id="memory_swap_limit"
+      name="memory_swap_limit"
+      class="w-full bg-black/60 border border-accent/30 rounded px-4 py-3 text-white appearance-none focus:border-accent transition-all duration-200 focus-visible uppercase stable-dimensions"
+      onchange="window.honeypotVisualizations && window.honeypotVisualizations.updateMemoryVisualizations()"
+      onfocus="this.parentElement.parentElement.classList.add('showing-tooltip')"
+    >
+      <option value="64m">64 MB</option>
+      <option value="128m">128 MB</option>
+      <option value="256m">256 MB</option>
+      <option value="512m" selected>512 MB</option>
+      <option value="768m">768 MB</option>
+      <option value="1024m">1024 MB</option>
+      <option value="1536m">1536 MB</option>
+      <option value="2048m">2048 MB</option>
+    </select>
+    <div
+      class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-accent"
+    >
+      <svg
+        class="h-5 w-5"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </div>
+  </div>
+  <div class="text-white/50 text-xs mt-1">
+    Range: 64MB - 2048MB (Must be ≥ Memory Limit)
+  </div>
+</div>

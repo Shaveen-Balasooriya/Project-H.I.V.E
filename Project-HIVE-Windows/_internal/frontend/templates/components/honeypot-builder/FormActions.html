@@ -1,0 +1,62 @@
+<!-- Add a help section at the bottom of the form before submission -->
+<div class="p-4 bg-black/30 border border-white/10 rounded-lg">
+  <h4 class="font-display text-lg text-accent mb-2">Ready to Deploy?</h4>
+  <p class="text-white/60 text-sm">
+    Your honeypot will be created with the settings specified above. After
+    deployment, you can monitor it from the Honeypots page. Note that the
+    settings set here are not reversible.
+  </p>
+</div>
+
+<!-- Updated Form Actions without any form status messages -->
+<div class="mt-10">
+  <!-- Form actions with enhanced deploy button - hardcoded accent color -->
+  <div class="flex flex-col-reverse sm:flex-row justify-between gap-4">
+    <!-- Cancel button with consistent border width to prevent layout shifts -->
+    <button
+      id="cancel-btn"
+      type="button"
+      onclick="window.location.href='/honeypots'"
+      class="w-full sm:w-auto px-6 py-3 bg-transparent border-2 border-accent/50 hover:border-accent rounded font-medium transition-all duration-300 flex items-center justify-center space-x-2"
+    >
+      <span>CANCEL</span>
+    </button>
+
+    <!-- Deploy button -->
+    <button
+      id="deploy-btn"
+      type="submit"
+      style="
+        background-color: #ff3d4c !important;
+        border-color: #ff3d4c !important;
+      "
+      class="w-full sm:w-auto px-6 py-3 text-white rounded font-medium transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+    >
+      <span id="deploy-text" style="color: white !important; font-weight: 600"
+        >DEPLOY HONEYPOT</span
+      >
+      <div id="deploy-spinner" class="hidden">
+        <svg
+          class="animate-spin h-5 w-5"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+      </div>
+    </button>
+  </div>
+</div>

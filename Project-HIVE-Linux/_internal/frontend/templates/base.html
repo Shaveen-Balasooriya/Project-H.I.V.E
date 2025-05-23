@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Project H.I.V.E{% endblock %}</title>
+
+    <!-- Custom fonts -->
+    <style>
+      @font-face {
+        font-family: "Iceland";
+        src: url("{{ url_for('static', filename='assets/fonts/Iceland.ttf') }}")
+          format("truetype");
+      }
+      @font-face {
+        font-family: "Inter";
+        src: url("{{ url_for('static', filename='assets/fonts/Inter.ttf') }}")
+          format("truetype");
+      }
+    </style>
+
+    <!-- Tailwind config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#000000",
+              secondary: "#FFFFFF",
+              accent: "#FF3D4C",
+              success: "#10B981",
+              warning: "#F59E0B",
+              danger: "#EF4444",
+            },
+            fontFamily: {
+              display: ["Iceland", "sans-serif"],
+              sans: ["Inter", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
+
+    <!-- Global CSS -->
+    <link
+      href="{{ url_for('static', filename='css/main.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Mobile responsiveness enhancements -->
+    <link
+      href="{{ url_for('static', filename='css/honeypot-builder/mobile-responsive.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Loading overlay CSS -->
+    <link
+      href="{{ url_for('static', filename='css/loading-overlay.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Page-specific CSS -->
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="bg-primary text-secondary font-sans page-container">
+    <!-- Header -->
+    {% include 'components/Header.html' %}
+
+    <!-- Include the loading overlay component -->
+    {% include 'components/LoadingOverlay.html' %}
+
+    <!-- Main content with consistent spacing -->
+    <main id="main-content" class="page-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include 'components/Footer.html' %}
+
+    <!-- Global Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+
+    <!-- Loading overlay script -->
+    <script src="{{ url_for('static', filename='js/loadingOverlay.js') }}"></script>
+
+    <!-- Page-specific Scripts -->
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
