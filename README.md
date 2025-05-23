@@ -20,20 +20,20 @@
 
 ### 📊 OpenSearch Dashboard
 
-![Dashboard](assets\OpenSearch_Dashboard.png)
+![Dashboard](assets/OpenSearch_Dashboard.png)
 
 ### 🌐 Project H.I.V.E UI (Flask + Tailwind CSS)
 
 #### 🖥️ Honeypot Management Page
-![Honeypot Management Page](assets\Honeypot_Dashboard.jpeg)
+![Honeypot Management Page](assets/Honeypot_Dashboard.jpeg)
 -------------------------------
 
 ### 👷🏽‍♂️ Honeypot Builder Page
-![Honeypot Builder Page](assets\Honeypot_Builder_Page.jpeg)
+![Honeypot Builder Page](assets/Honeypot_Builder_Page.jpeg)
 -------------------------------
 
 ### 🖥️ Service Management Page
-![Service Manager Page](assets\Service_Manager.jpeg)
+![Service Manager Page](assets/Service_Manager.jpeg)
 
 ## 🚀 Architecture
 
