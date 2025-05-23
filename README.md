@@ -4,7 +4,7 @@
 
 # Project H.I.V.E (Honeypot Intrusion Vigilance Engine)
 
-**An open-source, containerized honeypot intelligence platform** built for detecting, analyzing, and sharing real-world cyber threats. Project H.I.V.E empowers any organization big or small to gain visibility into malicious activity using intelligent and scalable honeypots.
+**An open-source, containerized honeypot intelligence platform** built for detecting, and analyzing real-world cyber threats. Project H.I.V.E empowers any organization big or small to gain visibility into malicious activity using intelligent and scalable honeypots.
 
 ## 🎯 Features
 
