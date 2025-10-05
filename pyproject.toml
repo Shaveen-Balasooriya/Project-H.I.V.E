@@ -1,0 +1,22 @@
+[project]
+name = "project-hive"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "typer (>=0.17.4,<0.18.0)"
+]
+
+[tool.poetry]
+packages = [{include = "project_hive", from = "src"}]
+
+[tool.poetry.scripts]
+hive = "project_hive.main:app"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
